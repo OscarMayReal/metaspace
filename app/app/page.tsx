@@ -12,9 +12,11 @@ import {
     Graphics,
     Sprite,
     Texture,
+    Ticker,
 } from 'pixi.js';
-import type { PixiReactElementProps } from "@pixi/react";
+import type { ApplicationRef, PixiReactElementProps } from "@pixi/react";
 import { useEffect, useRef } from "react";
+import { registerPixiJSActionsMixin, Action } from 'pixijs-actions';
 
 extend({
     Container,
@@ -23,9 +25,14 @@ extend({
 });
 
 export default function Home() {
+    const app = useRef<ApplicationRef>(null);
     const ref = useRef<HTMLDivElement>(null);
     return <div ref={ref} className="w-full h-full bg-[#75eba4]" >
-        <Application resizeTo={ref}>
+        <Application onInit={(app) => {
+            globalThis.__PIXI_APP__ = app;
+            registerPixiJSActionsMixin(Container);
+            app.ticker.add(Action.tick);
+        }} ref={app} resizeTo={ref}>
             <pixiContainer>
                 <GreenSquare />
             </pixiContainer>
@@ -44,16 +51,17 @@ function GreenSquare() {
                 sprite.current.y = e.clientY;
             }
         }
+        // if (sprite.current) {
+        //     sprite.current.run(Action.repeatForever(Action.rotateBy(100, 10)))
+        // }
         const mouseDown = (e: MouseEvent) => {
             if (sprite.current) {
-                sprite.current.scale.x *= 2;
-                sprite.current.scale.y *= 2;
+                sprite.current.run(Action.scaleToSize(200, 200, 0.1).easeInOut())
             }
         }
         const mouseUp = (e: MouseEvent) => {
             if (sprite.current) {
-                sprite.current.scale.x /= 2;
-                sprite.current.scale.y /= 2;
+                sprite.current.run(Action.scaleToSize(100, 100, 0.1).easeInOut())
             }
         }
         window.addEventListener("mousemove", moveToMouse);
@@ -64,6 +72,6 @@ function GreenSquare() {
             window.removeEventListener("mousedown", mouseDown);
             window.removeEventListener("mouseup", mouseUp);
         };
-    }, []);
-    return <pixiSprite texture={Texture.WHITE} width={100} height={100} ref={sprite} />
+    }, [sprite.current]);
+    return <pixiSprite x={100} y={100} texture={Texture.WHITE} width={100} height={100} ref={sprite} />
 }
