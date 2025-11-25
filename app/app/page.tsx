@@ -5,9 +5,9 @@ import {
     Application,
     extend,
     PixiElements,
-
 } from '@pixi/react';
 import {
+    Assets,
     Container,
     Graphics,
     Sprite,
@@ -18,11 +18,79 @@ import type { ApplicationRef, PixiReactElementProps } from "@pixi/react";
 import { useEffect, useRef, useState } from "react";
 import { registerPixiJSActionsMixin, Action } from 'pixijs-actions';
 
+const gridsize = 50;
+
 extend({
     Container,
     Graphics,
     Sprite,
 });
+
+type BuildingProps = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    id: number;
+}
+
+function Building({ x, y, width, height, setBuildings, id, buildings }: BuildingProps & { setBuildings: (buildings: BuildingProps[]) => void, buildings: BuildingProps[] }) {
+    const sprite = useRef<Sprite>(null);
+    const [dragging, setDragging] = useState(false);
+    const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
+    useEffect(() => {
+        if (!sprite.current) return;
+        Assets.load('/building.png').then((texture) => {
+            sprite.current.texture = texture;
+        });
+    }, [sprite.current]);
+    useEffect(() => {
+        if (!sprite.current) return;
+        const onMouseMove = (e: MouseEvent) => {
+            if (dragging) {
+                sprite.current.x = Math.round((e.clientX - mouseOffset.x) / gridsize) * gridsize;
+                sprite.current.y = Math.round((e.clientY - mouseOffset.y) / gridsize) * gridsize;
+            }
+        };
+        const onMouseDown = (e: MouseEvent) => {
+            if (e.clientX > x && e.clientX < x + width && e.clientY > y && e.clientY < y + height) {
+                setDragging(true);
+                setMouseOffset({ x: e.clientX - sprite.current.x, y: e.clientY - sprite.current.y });
+            }
+        };
+        const onMouseUp = (e: MouseEvent) => {
+            setDragging(false);
+            setBuildings(buildings.map((building) => {
+                if (building.id === id) {
+                    return { ...building, x: sprite.current.x, y: sprite.current.y };
+                }
+                return building;
+            }));
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('mouseup', onMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mousedown', onMouseDown);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+    }, [sprite.current, x, y, width, height, id, setBuildings, buildings, dragging]);
+    return <pixiContainer>
+        <pixiSprite ref={sprite} x={x} y={y} width={width} height={height} />
+    </pixiContainer>
+}
+
+function BuildingContainer() {
+    const [buildings, setBuildings] = useState<BuildingProps[]>([
+        { x: 100, y: 100, width: 100, height: 100, id: 1 },
+        { x: 200, y: 200, width: 100, height: 100, id: 2 },
+        { x: 300, y: 300, width: 100, height: 100, id: 3 },
+    ]);
+    return <pixiContainer>
+        {buildings.map((building, index) => <Building key={index} {...building} setBuildings={setBuildings} buildings={buildings} />)}
+    </pixiContainer>
+}
 
 export default function Home() {
     const app = useRef<ApplicationRef>(null);
@@ -34,6 +102,7 @@ export default function Home() {
             app.ticker.add(Action.tick);
         }} ref={app} resizeTo={ref}>
             <pixiContainer>
+                <BuildingContainer />
                 <Player />
             </pixiContainer>
         </Application>
