@@ -15,7 +15,7 @@ import {
     Ticker,
 } from 'pixi.js';
 import type { ApplicationRef, PixiReactElementProps } from "@pixi/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { registerPixiJSActionsMixin, Action } from 'pixijs-actions';
 
 extend({
@@ -34,7 +34,7 @@ export default function Home() {
             app.ticker.add(Action.tick);
         }} ref={app} resizeTo={ref}>
             <pixiContainer>
-                <GreenSquare />
+                <Player />
             </pixiContainer>
         </Application>
         <ActionbarTitle />
@@ -42,36 +42,63 @@ export default function Home() {
     </div>
 }
 
-function GreenSquare() {
+function Player() {
     const sprite = useRef<Sprite>(null);
+    const [position, setPosition] = useState({ x: 100, y: 100 });
+    const [keys, setKeys] = useState({ ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false });
+    const playerspeed = 5;
     useEffect(() => {
-        const moveToMouse = (e: MouseEvent) => {
-            if (sprite.current) {
-                sprite.current.x = e.clientX;
-                sprite.current.y = e.clientY;
-            }
-        }
-        // if (sprite.current) {
-        //     sprite.current.run(Action.repeatForever(Action.rotateBy(100, 10)))
-        // }
-        const mouseDown = (e: MouseEvent) => {
-            if (sprite.current) {
-                sprite.current.run(Action.scaleToSize(200, 200, 0.1).easeInOut())
-            }
-        }
-        const mouseUp = (e: MouseEvent) => {
-            if (sprite.current) {
-                sprite.current.run(Action.scaleToSize(100, 100, 0.1).easeInOut())
-            }
-        }
-        window.addEventListener("mousemove", moveToMouse);
-        window.addEventListener("mousedown", mouseDown);
-        window.addEventListener("mouseup", mouseUp);
-        return () => {
-            window.removeEventListener("mousemove", moveToMouse);
-            window.removeEventListener("mousedown", mouseDown);
-            window.removeEventListener("mouseup", mouseUp);
+        const keyDownHandler = (e: KeyboardEvent) => {
+            var localkeys = keys;
+            localkeys[e.key] = true;
+            setKeys(localkeys);
         };
-    }, [sprite.current]);
-    return <pixiSprite x={100} y={100} texture={Texture.WHITE} width={100} height={100} ref={sprite} />
+        const keyUpHandler = (e: KeyboardEvent) => {
+            var localkeys = keys;
+            localkeys[e.key] = false;
+            setKeys(localkeys);
+        };
+        window.addEventListener("keydown", keyDownHandler);
+        window.addEventListener("keyup", keyUpHandler);
+        Ticker.shared.add(() => {
+            let localpos = position;
+            if (keys.ArrowUp) {
+                localpos.y -= playerspeed;
+            }
+            if (keys.ArrowDown) {
+                localpos.y += playerspeed;
+            }
+            if (keys.ArrowLeft) {
+                localpos.x -= playerspeed;
+            }
+            if (keys.ArrowRight) {
+                localpos.x += playerspeed;
+            }
+            sprite.current?.position.set(localpos.x, localpos.y);
+            setPosition(localpos);
+        });
+        return () => {
+            window.removeEventListener("keydown", keyDownHandler);
+            window.removeEventListener("keyup", keyUpHandler);
+            Ticker.shared.remove(() => {
+                let localpos = position;
+                if (keys.ArrowUp) {
+                    localpos.y -= playerspeed;
+                }
+                if (keys.ArrowDown) {
+                    localpos.y += playerspeed;
+                }
+                if (keys.ArrowLeft) {
+                    localpos.x -= playerspeed;
+                }
+                if (keys.ArrowRight) {
+                    localpos.x += playerspeed;
+                }
+                sprite.current?.position.set(localpos.x, localpos.y);
+                setPosition(localpos);
+            });
+        }
+
+    }, [sprite.current, position, keys]);
+    return <pixiSprite texture={Texture.WHITE} width={50} height={100} ref={sprite} />
 }
