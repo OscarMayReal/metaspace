@@ -1,6 +1,7 @@
 "use client"
 import { ActionbarTitle, ActionBar, EditBar, ActionbarHolder, InspectorHolder } from "@/components/shell";
 import { useWindowSize } from "@/lib/screensize";
+import { BuildingProps, Building } from "@/lib/buildings";
 import {
     Application,
     extend,
@@ -15,6 +16,7 @@ import {
     Ticker,
     NineSliceSprite,
     SCALE_MODES,
+    TilingSprite
 } from 'pixi.js';
 import type { ApplicationRef, PixiReactElementProps } from "@pixi/react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
@@ -29,88 +31,10 @@ extend({
     Graphics: Graphics,
     Sprite: Sprite,
     NineSliceSprite: NineSliceSprite,
+    TilingSprite: TilingSprite,
 });
 
-type BuildingProps = {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    id: string;
-}
 
-function Building({ x, y, width, height, id }: BuildingProps) {
-    const sprite = useRef<Sprite>(null);
-    const { isEditing, setSelectedBuilding, setBuildings, buildings } = useContext(MetaSpaceContext);
-    const [dragging, setDragging] = useState(false);
-    const [resizing, setResizing] = useState(false);
-    const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
-    const resizeHandle = useRef<Sprite>(null);
-    useEffect(() => {
-        if (!sprite.current) return;
-        Assets.load('/building.png').then((texture) => {
-            texture.baseTexture.scaleMode = 'nearest';
-            sprite.current.texture = texture;
-        });
-    }, [sprite.current]);
-    useEffect(() => {
-        if (!sprite.current) return;
-        const onMouseMove = (e: MouseEvent) => {
-            if (dragging) {
-                sprite.current.run(Action.moveToX(Math.round((e.clientX - mouseOffset.x) / gridsize) * gridsize, 0.075));
-                sprite.current.run(Action.moveToY(Math.round((e.clientY - mouseOffset.y) / gridsize) * gridsize, 0.075));
-                // sprite.current.x = Math.round((e.clientX - mouseOffset.x) / gridsize) * gridsize;
-                // sprite.current.y = Math.round((e.clientY - mouseOffset.y) / gridsize) * gridsize;
-                resizeHandle.current.x = sprite.current.x + sprite.current.width - 10;
-                resizeHandle.current.y = sprite.current.y + sprite.current.height - 10;
-            } else if (resizing) {
-                // sprite.current.run(Action.moveToX(Math.round((e.clientX - sprite.current.x) / gridsize) * gridsize, 0.1));
-                // sprite.current.run(Action.moveToY(Math.round((e.clientY - sprite.current.y) / gridsize) * gridsize, 0.1));
-                sprite.current.width = Math.round((e.clientX - sprite.current.x) / gridsize) * gridsize;
-                sprite.current.height = Math.round((e.clientY - sprite.current.y) / gridsize) * gridsize;
-                resizeHandle.current.x = sprite.current.x + sprite.current.width - 10;
-                resizeHandle.current.y = sprite.current.y + sprite.current.height - 10;
-            }
-        };
-        const onMouseDown = (e: MouseEvent) => {
-            if (!isEditing) return;
-            if ((e.clientX > x && e.clientX < x + width && e.clientY > y && e.clientY < y + height) && !(e.clientX > x + width - 10 && e.clientY > y + height - 10)) {
-                console.log(id);
-                setSelectedBuilding(id);
-                setDragging(true);
-                setMouseOffset({ x: e.clientX - sprite.current.x, y: e.clientY - sprite.current.y });
-            } else if (e.clientX > x + width - 10 && e.clientY > y + height - 10 && e.clientX < x + width && e.clientY < y + height) {
-                setResizing(true);
-                setMouseOffset({ x: e.clientX - sprite.current.x + width - 10, y: e.clientY - sprite.current.y + height - 10 });
-            }
-        };
-        const onMouseUp = (e: MouseEvent) => {
-            if (!sprite.current || !resizeHandle.current) return;
-            resizeHandle.current.x = sprite.current.x + sprite.current.width - 10;
-            resizeHandle.current.y = sprite.current.y + sprite.current.height - 10;
-            setDragging(false);
-            setResizing(false);
-            setBuildings(buildings.map((building) => {
-                if (building.id === id) {
-                    return { ...building, x: sprite.current.x, y: sprite.current.y, width: sprite.current.width, height: sprite.current.height };
-                }
-                return building;
-            }));
-        };
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mousedown', onMouseDown);
-        window.addEventListener('mouseup', onMouseUp);
-        return () => {
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mousedown', onMouseDown);
-            window.removeEventListener('mouseup', onMouseUp);
-        };
-    }, [sprite.current, x, y, width, height, id, setBuildings, buildings, dragging, resizing]);
-    return <pixiContainer>
-        <pixiNineSliceSprite ref={sprite} topHeight={10} bottomHeight={10} leftWidth={10} rightWidth={10} x={x} y={y} width={width} height={height} />
-        {isEditing && <pixiSprite ref={resizeHandle} texture={Texture.WHITE} x={x + width - 10} y={y + height - 10} width={10} height={10} />}
-    </pixiContainer>
-}
 
 export const MetaSpaceContext = createContext({
     isEditing: false,
@@ -128,9 +52,12 @@ export default function Home() {
     const ref = useRef<HTMLDivElement>(null);
     const size = useWindowSize();
     const [buildings, setBuildings] = useState<BuildingProps[]>([
-        { x: 100, y: 100, width: 100, height: 100, id: "0" },
-        { x: 200, y: 200, width: 100, height: 100, id: "1" },
-        { x: 300, y: 300, width: 100, height: 100, id: "2" },
+        { x: 100, y: 100, width: 100, height: 100, id: "0", type: "grassfloor" },
+        { x: 200, y: 200, width: 100, height: 100, id: "1", type: "stonefloor" },
+        { x: 300, y: 300, width: 100, height: 100, id: "2", type: "woodfloor" },
+        { x: 400, y: 400, width: 100, height: 100, id: "3", type: "building" },
+        { x: 500, y: 500, width: 100, height: 100, id: "4", type: "building" },
+        { x: 600, y: 600, width: 100, height: 100, id: "5", type: "building" },
     ]);
     useEffect(() => {
         console.log(buildings);
