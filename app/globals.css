@@ -139,6 +139,7 @@ body {
   min-width: 100vw;
   min-height: 100dvh;
   font-family: var(--font-figtree);
+  user-select: none
 }
 
 .actionbar {
@@ -156,6 +157,22 @@ body {
   padding-left: 10px;
   padding-right: 10px;
   gap: 10px;
+  overflow: hidden;
+}
+
+.floating-panel {
+  background-color: var(--actionbar-background);
+  backdrop-filter: blur(10px);
+  /* width: 350px; */
+  width: auto;
+  border-radius: 30px;
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px, rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
+  border: var(--actionbar-border);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 20px;
   overflow: hidden;
 }
 
