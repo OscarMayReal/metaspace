@@ -13,6 +13,8 @@ import {
     Sprite,
     Texture,
     Ticker,
+    NineSliceSprite,
+    SCALE_MODES,
 } from 'pixi.js';
 import type { ApplicationRef, PixiReactElementProps } from "@pixi/react";
 import { useEffect, useRef, useState } from "react";
@@ -24,6 +26,7 @@ extend({
     Container,
     Graphics,
     Sprite,
+    NineSliceSprite,
 });
 
 type BuildingProps = {
@@ -37,10 +40,13 @@ type BuildingProps = {
 function Building({ x, y, width, height, setBuildings, id, buildings }: BuildingProps & { setBuildings: (buildings: BuildingProps[]) => void, buildings: BuildingProps[] }) {
     const sprite = useRef<Sprite>(null);
     const [dragging, setDragging] = useState(false);
+    const [resizing, setResizing] = useState(false);
     const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
+    const resizeHandle = useRef<Sprite>(null);
     useEffect(() => {
         if (!sprite.current) return;
         Assets.load('/building.png').then((texture) => {
+            texture.baseTexture.scaleMode = 'nearest';
             sprite.current.texture = texture;
         });
     }, [sprite.current]);
@@ -50,19 +56,30 @@ function Building({ x, y, width, height, setBuildings, id, buildings }: Building
             if (dragging) {
                 sprite.current.x = Math.round((e.clientX - mouseOffset.x) / gridsize) * gridsize;
                 sprite.current.y = Math.round((e.clientY - mouseOffset.y) / gridsize) * gridsize;
+                resizeHandle.current.x = sprite.current.x + sprite.current.width - 10;
+                resizeHandle.current.y = sprite.current.y + sprite.current.height - 10;
+            } else if (resizing) {
+                sprite.current.width = Math.round((e.clientX - sprite.current.x) / gridsize) * gridsize;
+                sprite.current.height = Math.round((e.clientY - sprite.current.y) / gridsize) * gridsize;
+                resizeHandle.current.x = sprite.current.x + sprite.current.width - 10;
+                resizeHandle.current.y = sprite.current.y + sprite.current.height - 10;
             }
         };
         const onMouseDown = (e: MouseEvent) => {
-            if (e.clientX > x && e.clientX < x + width && e.clientY > y && e.clientY < y + height) {
+            if ((e.clientX > x && e.clientX < x + width && e.clientY > y && e.clientY < y + height) && !(e.clientX > x + width - 10 && e.clientY > y + height - 10)) {
                 setDragging(true);
                 setMouseOffset({ x: e.clientX - sprite.current.x, y: e.clientY - sprite.current.y });
+            } else if (e.clientX > x + width - 10 && e.clientY > y + height - 10 && e.clientX < x + width && e.clientY < y + height) {
+                setResizing(true);
+                setMouseOffset({ x: e.clientX - sprite.current.x + width - 10, y: e.clientY - sprite.current.y + height - 10 });
             }
         };
         const onMouseUp = (e: MouseEvent) => {
             setDragging(false);
+            setResizing(false);
             setBuildings(buildings.map((building) => {
                 if (building.id === id) {
-                    return { ...building, x: sprite.current.x, y: sprite.current.y };
+                    return { ...building, x: sprite.current.x, y: sprite.current.y, width: sprite.current.width, height: sprite.current.height };
                 }
                 return building;
             }));
@@ -75,9 +92,10 @@ function Building({ x, y, width, height, setBuildings, id, buildings }: Building
             window.removeEventListener('mousedown', onMouseDown);
             window.removeEventListener('mouseup', onMouseUp);
         };
-    }, [sprite.current, x, y, width, height, id, setBuildings, buildings, dragging]);
+    }, [sprite.current, x, y, width, height, id, setBuildings, buildings, dragging, resizing]);
     return <pixiContainer>
-        <pixiSprite ref={sprite} x={x} y={y} width={width} height={height} />
+        <pixiNineSliceSprite ref={sprite} topHeight={10} bottomHeight={10} leftWidth={10} rightWidth={10} x={x} y={y} width={width} height={height} />
+        <pixiSprite ref={resizeHandle} texture={Texture.WHITE} x={x + width - 10} y={y + height - 10} width={10} height={10} />
     </pixiContainer>
 }
 
@@ -93,15 +111,23 @@ function BuildingContainer() {
 }
 
 export default function Home() {
+    const background = useRef<Sprite>(null);
     const app = useRef<ApplicationRef>(null);
     const ref = useRef<HTMLDivElement>(null);
-    return <div ref={ref} className="w-full h-full bg-[#75eba4]" >
+    const size = useWindowSize();
+    useEffect(() => {
+        if (!background.current) return;
+        background.current.width = size.width;
+        background.current.height = size.height;
+    }, [size, background.current]);
+    return <div ref={ref} className="w-full h-full bg-white" >
         <Application onInit={(app) => {
             globalThis.__PIXI_APP__ = app;
             registerPixiJSActionsMixin(Container);
             app.ticker.add(Action.tick);
-        }} ref={app} resizeTo={ref}>
+        }} ref={app} resizeTo={ref} autoDensity={true} resolution={window.devicePixelRatio}>
             <pixiContainer>
+                <pixiSprite ref={background} texture={Texture.WHITE} />
                 <BuildingContainer />
                 <Player />
             </pixiContainer>
@@ -117,6 +143,10 @@ function Player() {
     const [keys, setKeys] = useState({ ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false });
     const playerspeed = 5;
     useEffect(() => {
+        if (!sprite.current) return;
+        Assets.load('/red.png').then((texture) => {
+            sprite.current.texture = texture;
+        });
         const keyDownHandler = (e: KeyboardEvent) => {
             var localkeys = keys;
             localkeys[e.key] = true;
@@ -127,9 +157,7 @@ function Player() {
             localkeys[e.key] = false;
             setKeys(localkeys);
         };
-        window.addEventListener("keydown", keyDownHandler);
-        window.addEventListener("keyup", keyUpHandler);
-        Ticker.shared.add(() => {
+        const tickFuncion = () => {
             let localpos = position;
             if (keys.ArrowUp) {
                 localpos.y -= playerspeed;
@@ -145,29 +173,16 @@ function Player() {
             }
             sprite.current?.position.set(localpos.x, localpos.y);
             setPosition(localpos);
-        });
+        }
+        window.addEventListener("keydown", keyDownHandler);
+        window.addEventListener("keyup", keyUpHandler);
+        Ticker.shared.add(tickFuncion);
         return () => {
             window.removeEventListener("keydown", keyDownHandler);
             window.removeEventListener("keyup", keyUpHandler);
-            Ticker.shared.remove(() => {
-                let localpos = position;
-                if (keys.ArrowUp) {
-                    localpos.y -= playerspeed;
-                }
-                if (keys.ArrowDown) {
-                    localpos.y += playerspeed;
-                }
-                if (keys.ArrowLeft) {
-                    localpos.x -= playerspeed;
-                }
-                if (keys.ArrowRight) {
-                    localpos.x += playerspeed;
-                }
-                sprite.current?.position.set(localpos.x, localpos.y);
-                setPosition(localpos);
-            });
+            Ticker.shared.remove(tickFuncion);
         }
 
     }, [sprite.current, position, keys]);
-    return <pixiSprite texture={Texture.WHITE} width={50} height={100} ref={sprite} />
+    return <pixiSprite width={50} height={100} ref={sprite} />
 }
