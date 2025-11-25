@@ -5,6 +5,7 @@ import { useContext, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MetaSpaceContext } from "../app/app/page";
 import { Input } from "./ui/input";
+import Link from "next/link";
 
 export function ActionbarHolder() {
     const { isEditing, setIsEditing } = useContext(MetaSpaceContext);
@@ -113,7 +114,7 @@ export function EditBar() {
 
 export function ActionbarTitle() {
     return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="actionbar-header">
-        <ActionButton Icon={XIcon} style={{ backgroundColor: "#eb4034" }} />
+        <Link href="/home"><ActionButton Icon={XIcon} style={{ backgroundColor: "#eb4034" }} /></Link>
         <div style={{
 
         }}>
