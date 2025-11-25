@@ -20,14 +20,15 @@ import type { ApplicationRef, PixiReactElementProps } from "@pixi/react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { registerPixiJSActionsMixin, Action } from 'pixijs-actions';
 import { AnimatePresence } from "framer-motion";
+import { Grid } from "@/components/pixi/Grid";
 
 const gridsize = 50;
 
 extend({
-    Container,
-    Graphics,
-    Sprite,
-    NineSliceSprite,
+    Container: Container,
+    Graphics: Graphics,
+    Sprite: Sprite,
+    NineSliceSprite: NineSliceSprite,
 });
 
 type BuildingProps = {
@@ -139,6 +140,7 @@ export default function Home() {
                 <pixiSprite ref={background} texture={Texture.WHITE} />
                 <BuildingContainer />
                 <Player />
+                <Grid width={size.width} height={size.height} color={"#00000030"} lineThickness={1} pitch={{ x: gridsize, y: gridsize }} />
             </pixiContainer>
         </Application>
         <ActionbarTitle />

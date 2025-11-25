@@ -147,7 +147,7 @@ body {
   height: 60px;
   /* width: 350px; */
   width: auto;
-  border-radius: 999px;
+  border-radius: 30px;
   box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px, rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
   border: var(--actionbar-border);
   display: flex;
@@ -156,6 +156,7 @@ body {
   padding-left: 10px;
   padding-right: 10px;
   gap: 10px;
+  overflow: hidden;
 }
 
 .actionbar-holder {
@@ -164,7 +165,9 @@ body {
   left: 30px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
+  width: fit-content;
+  align-items: flex-start;
 }
 
 .actionbar-header {
@@ -201,6 +204,9 @@ body {
 }
 
 .toggle-button {
+  min-width: 40px;
+  min-height: 40px;
+  flex-shrink: 0;
   width: 40px;
   height: 40px;
   border-radius: 999px;
@@ -212,6 +218,9 @@ body {
 }
 
 .action-button {
+  min-width: 40px;
+  min-height: 40px;
+  flex-shrink: 0;
   width: 40px;
   height: 40px;
   border-radius: 999px;
