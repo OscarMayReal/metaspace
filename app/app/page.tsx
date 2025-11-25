@@ -1,5 +1,5 @@
 "use client"
-import { ActionbarTitle, ActionBar } from "@/components/shell";
+import { ActionbarTitle, ActionBar, EditBar, ActionbarHolder } from "@/components/shell";
 import { useWindowSize } from "@/lib/screensize";
 import {
     Application,
@@ -17,8 +17,9 @@ import {
     SCALE_MODES,
 } from 'pixi.js';
 import type { ApplicationRef, PixiReactElementProps } from "@pixi/react";
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { registerPixiJSActionsMixin, Action } from 'pixijs-actions';
+import { AnimatePresence } from "framer-motion";
 
 const gridsize = 50;
 
@@ -39,6 +40,7 @@ type BuildingProps = {
 
 function Building({ x, y, width, height, setBuildings, id, buildings }: BuildingProps & { setBuildings: (buildings: BuildingProps[]) => void, buildings: BuildingProps[] }) {
     const sprite = useRef<Sprite>(null);
+    const { isEditing } = useContext(MetaSpaceContext);
     const [dragging, setDragging] = useState(false);
     const [resizing, setResizing] = useState(false);
     const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
@@ -66,6 +68,7 @@ function Building({ x, y, width, height, setBuildings, id, buildings }: Building
             }
         };
         const onMouseDown = (e: MouseEvent) => {
+            if (!isEditing) return;
             if ((e.clientX > x && e.clientX < x + width && e.clientY > y && e.clientY < y + height) && !(e.clientX > x + width - 10 && e.clientY > y + height - 10)) {
                 setDragging(true);
                 setMouseOffset({ x: e.clientX - sprite.current.x, y: e.clientY - sprite.current.y });
@@ -95,7 +98,7 @@ function Building({ x, y, width, height, setBuildings, id, buildings }: Building
     }, [sprite.current, x, y, width, height, id, setBuildings, buildings, dragging, resizing]);
     return <pixiContainer>
         <pixiNineSliceSprite ref={sprite} topHeight={10} bottomHeight={10} leftWidth={10} rightWidth={10} x={x} y={y} width={width} height={height} />
-        <pixiSprite ref={resizeHandle} texture={Texture.WHITE} x={x + width - 10} y={y + height - 10} width={10} height={10} />
+        {isEditing && <pixiSprite ref={resizeHandle} texture={Texture.WHITE} x={x + width - 10} y={y + height - 10} width={10} height={10} />}
     </pixiContainer>
 }
 
@@ -110,7 +113,13 @@ function BuildingContainer() {
     </pixiContainer>
 }
 
+export const MetaSpaceContext = createContext({
+    isEditing: false,
+    setIsEditing: (isEditing: boolean) => { },
+});
+
 export default function Home() {
+    const [isEditing, setIsEditing] = useState(false);
     const background = useRef<Sprite>(null);
     const app = useRef<ApplicationRef>(null);
     const ref = useRef<HTMLDivElement>(null);
@@ -120,7 +129,7 @@ export default function Home() {
         background.current.width = size.width;
         background.current.height = size.height;
     }, [size, background.current]);
-    return <div ref={ref} className="w-full h-full bg-white" >
+    return <MetaSpaceContext.Provider value={{ isEditing, setIsEditing }}><div ref={ref} className="w-full h-full bg-white" >
         <Application onInit={(app) => {
             globalThis.__PIXI_APP__ = app;
             registerPixiJSActionsMixin(Container);
@@ -133,8 +142,8 @@ export default function Home() {
             </pixiContainer>
         </Application>
         <ActionbarTitle />
-        <ActionBar />
-    </div>
+        <ActionbarHolder />
+    </div></MetaSpaceContext.Provider>
 }
 
 function Player() {

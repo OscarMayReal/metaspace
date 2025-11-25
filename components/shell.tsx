@@ -1,10 +1,22 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { CameraIcon, CameraOffIcon, EyeClosedIcon, EyeIcon, MicIcon, MicOffIcon, XIcon, UserIcon } from "lucide-react";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { CameraIcon, CameraOffIcon, EyeClosedIcon, EyeIcon, MicIcon, MicOffIcon, XIcon, UserIcon, PencilLineIcon, PencilIcon, CheckIcon } from "lucide-react";
+import { useContext, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { MetaSpaceContext } from "../app/app/page";
+
+export function ActionbarHolder() {
+    const { isEditing, setIsEditing } = useContext(MetaSpaceContext);
+    return <div className="actionbar-holder">
+        <AnimatePresence>
+            {isEditing && <EditBar key="editbar" />}
+            <ActionBar key="actionbar" />
+        </AnimatePresence>
+    </div>
+}
 
 export function ActionBar() {
+    const { isEditing, setIsEditing } = useContext(MetaSpaceContext);
     const [mic, setMic] = useState(false);
     const [camera, setCamera] = useState(false);
     const [hidden, setHidden] = useState(false);
@@ -14,6 +26,19 @@ export function ActionBar() {
         {/* <div className="flex-grow" /> */}
         {/* <ActionButton Icon={XIcon} style={{ backgroundColor: "#eb4034" }} /> */}
         <ToggleButton state={hidden} setState={setHidden} Icon={EyeIcon} ActiveIcon={EyeClosedIcon} />
+        <ToggleButton state={isEditing} setState={setIsEditing} Icon={PencilIcon} ActiveIcon={CheckIcon} />
+    </motion.div>
+}
+
+export function EditBar() {
+    return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="actionbar">
+        <ActionButton Icon={PencilIcon} style={{ backgroundColor: "#eb403400" }} />
+        <div style={{
+
+        }}>
+            <div className="actionbar-header-title">Edit Mode</div>
+            <div className="actionbar-header-text">You are editing this room</div>
+        </div>
     </motion.div>
 }
 

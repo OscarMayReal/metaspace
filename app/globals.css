@@ -147,9 +147,6 @@ body {
   height: 60px;
   /* width: 350px; */
   width: auto;
-  position: absolute;
-  bottom: 30px;
-  left: 30px;
   border-radius: 999px;
   box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px, rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
   border: var(--actionbar-border);
@@ -159,6 +156,15 @@ body {
   padding-left: 10px;
   padding-right: 10px;
   gap: 10px;
+}
+
+.actionbar-holder {
+  position: absolute;
+  bottom: 30px;
+  left: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .actionbar-header {
