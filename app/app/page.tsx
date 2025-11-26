@@ -51,6 +51,7 @@ export default function Home() {
     const app = useRef<ApplicationRef>(null);
     const ref = useRef<HTMLDivElement>(null);
     const size = useWindowSize();
+    const [selectedBuilding, setSelectedBuilding] = useState(null as string | null);
     const [buildings, setBuildings] = useState<BuildingProps[]>([
         { x: 100, y: 100, width: 100, height: 100, id: "0", type: "grassfloor", locked: false },
         { x: 200, y: 200, width: 100, height: 100, id: "1", type: "stonefloor", locked: false },
@@ -59,10 +60,11 @@ export default function Home() {
         { x: 500, y: 500, width: 100, height: 100, id: "4", type: "building", locked: false },
         { x: 600, y: 600, width: 100, height: 100, id: "5", type: "building", locked: false },
     ]);
-    // useEffect(() => {
-    //     console.log(buildings);
-    // }, [buildings]);
-    const [selectedBuilding, setSelectedBuilding] = useState(null as string | null);
+    useEffect(() => {
+        if (!isEditing) {
+            setSelectedBuilding(null);
+        }
+    }, [isEditing]);
     useEffect(() => {
         if (!background.current) return;
         background.current.width = size.width;
@@ -73,6 +75,7 @@ export default function Home() {
             globalThis.__PIXI_APP__ = app;
             registerPixiJSActionsMixin(Container);
             app.ticker.add(Action.tick);
+            app.renderer.canvas.getContext("2d").imageSmoothingEnabled = false;
         }} ref={app} resizeTo={ref} className="appcanvas" autoDensity={true} resolution={window.devicePixelRatio}>
             <pixiContainer>
                 <pixiSprite ref={background} texture={Texture.WHITE} />
@@ -92,7 +95,7 @@ function Player() {
     const sprite = useRef<Sprite>(null);
     const [position, setPosition] = useState({ x: 100, y: 100 });
     const [keys, setKeys] = useState({ ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false });
-    const playerspeed = 5;
+    const playerspeed = 3;
     useEffect(() => {
         if (!sprite.current) return;
         Assets.load('/red.png').then((texture) => {

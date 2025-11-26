@@ -16,8 +16,9 @@ import {
     SCALE_MODES,
     TilingSprite,
     Filter,
+    TilingSpriteOptions,
 } from 'pixi.js';
-import { ArrowDownToLineIcon, FlowerIcon, HomeIcon, Icon, TreesIcon } from "lucide-react";
+import { ArrowDownToLineIcon, FlowerIcon, HomeIcon, Icon, TableIcon, TrashIcon, TreesIcon } from "lucide-react";
 import { OutlineFilter } from 'pixi-filters';
 
 const gridsize = 50;
@@ -33,7 +34,7 @@ extend({
 type buildingInfo = {
     Icon: React.JSX.ElementType,
     texture: string;
-    type: "9slice" | "tiling";
+    type: "9slice" | "tiling" | "sprite";
     options?: {
         topHeight: number;
         bottomHeight: number;
@@ -67,6 +68,23 @@ export const buildingTypes: Record<string, buildingInfo> = {
             category: "Buildings"
         }
     },
+    rug: {
+        Icon: ArrowDownToLineIcon,
+        texture: "/rug.png",
+        type: "9slice",
+        options: {
+            topHeight: 12,
+            bottomHeight: 12,
+            leftWidth: 12,
+            rightWidth: 12
+        },
+        name: "rug",
+        metadata: {
+            name: "Rug",
+            description: "A rug",
+            category: "Floors"
+        }
+    },
     "stonefloor": {
         Icon: ArrowDownToLineIcon,
         texture: "/stonefloor.png",
@@ -89,6 +107,17 @@ export const buildingTypes: Record<string, buildingInfo> = {
             category: "Floors"
         }
     },
+    "cabinet": {
+        Icon: TableIcon,
+        texture: "/cabinet1.png",
+        type: "sprite",
+        name: "cabinet",
+        metadata: {
+            name: "Cabinet",
+            description: "A cabinet",
+            category: "Furniture"
+        }
+    },
     "grassfloor": {
         Icon: FlowerIcon,
         texture: "/grassfloor.png",
@@ -98,6 +127,17 @@ export const buildingTypes: Record<string, buildingInfo> = {
             name: "Grass Floor",
             description: "A grass floor",
             category: "Floors"
+        }
+    },
+    "trashcan": {
+        Icon: TrashIcon,
+        texture: "/trashcan.png",
+        type: "sprite",
+        name: "trashcan",
+        metadata: {
+            name: "Trashcan",
+            description: "A trashcan",
+            category: "Furniture"
         }
     }
 }
@@ -217,6 +257,7 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
     return <pixiContainer>
         {buildingTypes[type].type === "9slice" && <pixiNineSliceSprite ref={sprite} topHeight={buildingTypes[type].options.topHeight} bottomHeight={buildingTypes[type].options.bottomHeight} leftWidth={buildingTypes[type].options.leftWidth} rightWidth={buildingTypes[type].options.rightWidth} x={x} y={y} width={width} height={height} />}
         {buildingTypes[type].type === "tiling" && <pixiTilingSprite ref={sprite} x={x} y={y} width={width} height={height} />}
+        {buildingTypes[type].type === "sprite" && <pixiSprite ref={sprite} x={x} y={y} width={width} height={height} />}
         {isEditing && <pixiSprite ref={resizeHandle} texture={Texture.WHITE} x={x + width - 10} y={y + height - 10} width={10} height={10} />}
     </pixiContainer>
 }
