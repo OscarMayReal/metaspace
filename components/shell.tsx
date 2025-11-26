@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { CameraIcon, CameraOffIcon, EyeClosedIcon, EyeIcon, MicIcon, MicOffIcon, XIcon, UserIcon, PencilLineIcon, PencilIcon, CheckIcon, PlusIcon, MousePointerIcon, MoveIcon, LockIcon } from "lucide-react";
 import { useContext, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { MetaSpaceContext } from "../app/app/page";
+import { MetaSpaceContext } from "@/app/space/[id]/app/page";
 import { Input } from "./ui/input";
 import Link from "next/link";
 import { buildingTypes } from "@/lib/buildings";
@@ -165,13 +165,14 @@ export function EditBar() {
 }
 
 export function ActionbarTitle() {
+    const { auth } = useContext(MetaSpaceContext);
     return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="actionbar-header">
         <Link href="/home"><ActionButton Icon={XIcon} style={{ backgroundColor: "#eb4034" }} /></Link>
         <div style={{
 
         }}>
             <div className="actionbar-header-title">Room Name</div>
-            <div className="actionbar-header-text"><UserIcon size={12} /> Username</div>
+            <div className="actionbar-header-text"><UserIcon size={12} /> {auth?.data?.user?.name}</div>
         </div>
     </motion.div>
 }

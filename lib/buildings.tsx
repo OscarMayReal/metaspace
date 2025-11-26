@@ -1,5 +1,5 @@
 "use client"
-import { MetaSpaceContext } from "@/app/app/page";
+import { MetaSpaceContext } from "@/app/space/[id]/app/page";
 import { Action } from "pixijs-actions";
 import { useContext, useEffect, useRef, useState } from "react";
 import {

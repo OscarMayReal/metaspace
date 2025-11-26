@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useContext, useRef } from "react";
 import { extend } from "@pixi/react";
-import { MetaSpaceContext } from "@/app/app/page";
+import { MetaSpaceContext } from "@/app/space/[id]/app/page";
 import * as PIXI from "pixi.js";
 import { Action } from "pixijs-actions";
 
