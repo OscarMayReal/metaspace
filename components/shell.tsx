@@ -1,15 +1,18 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { CameraIcon, CameraOffIcon, EyeClosedIcon, EyeIcon, MicIcon, MicOffIcon, XIcon, UserIcon, PencilLineIcon, PencilIcon, CheckIcon, PlusIcon, MousePointerIcon, MoveIcon } from "lucide-react";
+import { CameraIcon, CameraOffIcon, EyeClosedIcon, EyeIcon, MicIcon, MicOffIcon, XIcon, UserIcon, PencilLineIcon, PencilIcon, CheckIcon, PlusIcon, MousePointerIcon, MoveIcon, LockIcon } from "lucide-react";
 import { useContext, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MetaSpaceContext } from "../app/app/page";
 import { Input } from "./ui/input";
 import Link from "next/link";
+import { buildingTypes } from "@/lib/buildings";
+import { Field, FieldContent, FieldLabel } from "./ui/field";
+import { Checkbox } from "./ui/checkbox";
 
 export function ActionbarHolder() {
     const { isEditing, setIsEditing } = useContext(MetaSpaceContext);
-    return <div className="actionbar-holder">
+    return <div className="actionbar-holder" onClick={(e) => e.stopPropagation()}>
         <AnimatePresence>
             {isEditing && <EditBar key="editbar" />}
             <div className="flex flex-row gap-[10px] items-center">
@@ -23,13 +26,14 @@ export function ActionbarHolder() {
 }
 
 export function InspectorHolder() {
-    return <div className="actionbar-holder" style={{
+    return <div className="actionbar-holder" onClick={(e) => e.stopPropagation()} style={{
         left: "unset",
         right: 30,
-        alignItems: "flex-end",
+        alignItems: "stretch",
     }}>
         <AnimatePresence>
             <InspectorBar key="inspectorbar" />
+            <InspectorOverview key="inspectoroverview" />
             <InspectorSizes key="inspectorsizes" />
             <InspectorPosition key="inspectorposition" />
         </AnimatePresence>
@@ -38,7 +42,7 @@ export function InspectorHolder() {
 
 export function InspectorBar() {
     const { selectedBuilding, buildings, setBuildings } = useContext(MetaSpaceContext);
-    return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="actionbar">
+    return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="actionbar" onClick={(e) => e.stopPropagation()}>
         <ActionButton Icon={XIcon} style={{ backgroundColor: "#eb4034" }} />
         <div style={{
 
@@ -51,7 +55,7 @@ export function InspectorBar() {
 
 export function InspectorSizes() {
     const { selectedBuilding, buildings, setBuildings } = useContext(MetaSpaceContext);
-    return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="floating-panel">
+    return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="floating-panel" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-row gap-[10px] items-center">
             <div className="text-3xl">Sizing</div>
 
@@ -63,13 +67,32 @@ export function InspectorSizes() {
 
 export function InspectorPosition() {
     const { selectedBuilding, buildings, setBuildings } = useContext(MetaSpaceContext);
-    return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="floating-panel">
+    return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="floating-panel" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-row gap-[10px] items-center">
             <div className="text-3xl">Position</div>
 
         </div>
         <Input type="number" value={buildings[selectedBuilding].x / 50} onChange={(e) => setBuildings(buildings.map((building) => building.id === selectedBuilding ? { ...building, x: parseFloat(e.target.value) * 50 } : building))} placeholder="X" />
         <Input type="number" value={buildings[selectedBuilding].y / 50} onChange={(e) => setBuildings(buildings.map((building) => building.id === selectedBuilding ? { ...building, y: parseFloat(e.target.value) * 50 } : building))} placeholder="Y" />
+    </motion.div>
+}
+
+export function InspectorOverview() {
+    const { selectedBuilding, buildings, setBuildings } = useContext(MetaSpaceContext);
+    return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="floating-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-row gap-[10px] items-center">
+            <div className="text-3xl">Overview</div>
+        </div>
+        <div>
+            <div>{buildingTypes[buildings[selectedBuilding].type].metadata.name}</div>
+            <div>{buildingTypes[buildings[selectedBuilding].type].metadata.description}</div>
+        </div>
+        <Field>
+            <FieldLabel><LockIcon size={20} /> Locked</FieldLabel>
+            <FieldContent>
+                <Checkbox checked={buildings[selectedBuilding].locked} onCheckedChange={(checked) => setBuildings(buildings.map((building) => building.id === selectedBuilding ? { ...building, locked: checked } : building))} />
+            </FieldContent>
+        </Field>
     </motion.div>
 }
 

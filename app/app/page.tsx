@@ -52,12 +52,12 @@ export default function Home() {
     const ref = useRef<HTMLDivElement>(null);
     const size = useWindowSize();
     const [buildings, setBuildings] = useState<BuildingProps[]>([
-        { x: 100, y: 100, width: 100, height: 100, id: "0", type: "grassfloor" },
-        { x: 200, y: 200, width: 100, height: 100, id: "1", type: "stonefloor" },
-        { x: 300, y: 300, width: 100, height: 100, id: "2", type: "woodfloor" },
-        { x: 400, y: 400, width: 100, height: 100, id: "3", type: "building" },
-        { x: 500, y: 500, width: 100, height: 100, id: "4", type: "building" },
-        { x: 600, y: 600, width: 100, height: 100, id: "5", type: "building" },
+        { x: 100, y: 100, width: 100, height: 100, id: "0", type: "grassfloor", locked: false },
+        { x: 200, y: 200, width: 100, height: 100, id: "1", type: "stonefloor", locked: false },
+        { x: 300, y: 300, width: 100, height: 100, id: "2", type: "woodfloor", locked: false },
+        { x: 400, y: 400, width: 100, height: 100, id: "3", type: "building", locked: false },
+        { x: 500, y: 500, width: 100, height: 100, id: "4", type: "building", locked: false },
+        { x: 600, y: 600, width: 100, height: 100, id: "5", type: "building", locked: false },
     ]);
     useEffect(() => {
         console.log(buildings);
@@ -73,7 +73,7 @@ export default function Home() {
             globalThis.__PIXI_APP__ = app;
             registerPixiJSActionsMixin(Container);
             app.ticker.add(Action.tick);
-        }} ref={app} resizeTo={ref} autoDensity={true} resolution={window.devicePixelRatio}>
+        }} ref={app} resizeTo={ref} className="appcanvas" autoDensity={true} resolution={window.devicePixelRatio}>
             <pixiContainer>
                 <pixiSprite ref={background} texture={Texture.WHITE} />
                 {/* <BuildingContainer /> */}

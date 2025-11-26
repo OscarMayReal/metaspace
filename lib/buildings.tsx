@@ -86,9 +86,10 @@ export type BuildingProps = {
     height: number;
     id: string;
     type: BuildingType;
+    locked: boolean;
 }
 
-export function Building({ x, y, width, height, id, type }: BuildingProps) {
+export function Building({ x, y, width, height, id, type, locked }: BuildingProps) {
     const sprite = useRef<Sprite>(null);
     const { isEditing, setSelectedBuilding, setBuildings, buildings } = useContext(MetaSpaceContext);
     const [dragging, setDragging] = useState(false);
@@ -124,6 +125,10 @@ export function Building({ x, y, width, height, id, type }: BuildingProps) {
         const onMouseDown = (e: MouseEvent) => {
             if (!isEditing) return;
             if ((e.clientX > x && e.clientX < x + width && e.clientY > y && e.clientY < y + height) && !(e.clientX > x + width - 10 && e.clientY > y + height - 10)) {
+                if (locked) {
+                    setSelectedBuilding(id);
+                    return;
+                };
                 console.log(id);
                 setSelectedBuilding(id);
                 setDragging(true);
@@ -146,13 +151,13 @@ export function Building({ x, y, width, height, id, type }: BuildingProps) {
                 return building;
             }));
         };
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mousedown', onMouseDown);
-        window.addEventListener('mouseup', onMouseUp);
+        document.querySelector('.appcanvas')?.addEventListener('mousemove', onMouseMove);
+        document.querySelector('.appcanvas')?.addEventListener('mousedown', onMouseDown);
+        document.querySelector('.appcanvas')?.addEventListener('mouseup', onMouseUp);
         return () => {
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mousedown', onMouseDown);
-            window.removeEventListener('mouseup', onMouseUp);
+            document.querySelector('.appcanvas')?.removeEventListener('mousemove', onMouseMove);
+            document.querySelector('.appcanvas')?.removeEventListener('mousedown', onMouseDown);
+            document.querySelector('.appcanvas')?.removeEventListener('mouseup', onMouseUp);
         };
     }, [sprite.current, x, y, width, height, id, setBuildings, buildings, dragging, resizing]);
     return <pixiContainer>
