@@ -59,9 +59,9 @@ export default function Home() {
         { x: 500, y: 500, width: 100, height: 100, id: "4", type: "building", locked: false },
         { x: 600, y: 600, width: 100, height: 100, id: "5", type: "building", locked: false },
     ]);
-    useEffect(() => {
-        console.log(buildings);
-    }, [buildings]);
+    // useEffect(() => {
+    //     console.log(buildings);
+    // }, [buildings]);
     const [selectedBuilding, setSelectedBuilding] = useState(null as string | null);
     useEffect(() => {
         if (!background.current) return;

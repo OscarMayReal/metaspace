@@ -9,6 +9,7 @@ import Link from "next/link";
 import { buildingTypes } from "@/lib/buildings";
 import { Field, FieldContent, FieldLabel } from "./ui/field";
 import { Checkbox } from "./ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
 export function ActionbarHolder() {
     const { isEditing, setIsEditing } = useContext(MetaSpaceContext);
@@ -43,7 +44,7 @@ export function InspectorHolder() {
 export function InspectorBar() {
     const { selectedBuilding, buildings, setBuildings } = useContext(MetaSpaceContext);
     return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="actionbar" onClick={(e) => e.stopPropagation()}>
-        <ActionButton Icon={XIcon} style={{ backgroundColor: "#eb4034" }} />
+        <ActionButton onClick={() => setBuildings(buildings.filter((building) => building.id !== selectedBuilding))} Icon={XIcon} style={{ backgroundColor: "#eb4034" }} />
         <div style={{
 
         }}>
@@ -87,7 +88,7 @@ export function InspectorOverview() {
             <div>{buildingTypes[buildings[selectedBuilding].type].metadata.name}</div>
             <div>{buildingTypes[buildings[selectedBuilding].type].metadata.description}</div>
         </div>
-        <Field>
+        <Field className="flex flex-row gap-[10px] items-center">
             <FieldLabel><LockIcon size={20} /> Locked</FieldLabel>
             <FieldContent>
                 <Checkbox checked={buildings[selectedBuilding].locked} onCheckedChange={(checked) => setBuildings(buildings.map((building) => building.id === selectedBuilding ? { ...building, locked: checked } : building))} />
@@ -97,9 +98,37 @@ export function InspectorOverview() {
 }
 
 export function EditActionbar() {
+    const { buildings, setBuildings } = useContext(MetaSpaceContext);
     const [tool, setTool] = useState("cursor");
     return <motion.div initial={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0 }} animate={{ opacity: 1, width: "auto", paddingLeft: 10, paddingRight: 10 }} exit={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0 }} transition={{ duration: 0.2 }} className="actionbar">
-        <ActionButton style={{ backgroundColor: "rgba(37, 123, 227, 1)" }} Icon={PlusIcon} />
+        <DropdownMenu>
+            <DropdownMenuTrigger>
+                <ActionButton style={{ backgroundColor: "hsla(213, 77%, 52%, 1.00)" }} Icon={PlusIcon} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                {Object.entries(buildingTypes).map(([key, value]) => <DropdownMenuItem key={key} onClick={() => {
+                    // var localbuildings = buildings
+                    // localbuildings.push({
+                    //     x: 100,
+                    //     y: 100,
+                    //     type: key,
+                    //     width: 50,
+                    //     height: 50,
+                    //     locked: false,
+                    //     id: buildings.length.toString()
+                    // })
+                    setBuildings([...buildings, {
+                        x: 100,
+                        y: 100,
+                        type: key,
+                        width: 100,
+                        height: 100,
+                        locked: false,
+                        id: buildings.length.toString()
+                    }])
+                }}><value.Icon size={20} /> {value.metadata?.name}</DropdownMenuItem>)}
+            </DropdownMenuContent>
+        </DropdownMenu>
         <ToggleButton state={tool === "cursor"} onClick={() => setTool("cursor")} Icon={MousePointerIcon} ActiveIcon={MousePointerIcon} />
         <ToggleButton state={tool === "move"} onClick={() => setTool("move")} Icon={MoveIcon} ActiveIcon={MoveIcon} />
     </motion.div>
@@ -153,8 +182,8 @@ function ToggleButton({ state, setState, Icon, ActiveIcon, onClick }: { state: b
     </motion.div>
 }
 
-function ActionButton({ Icon, style }: { Icon: React.JSX.ElementType, style?: React.CSSProperties }) {
-    return <div className="action-button" style={style}>
+function ActionButton({ Icon, style, onClick }: { Icon: React.JSX.ElementType, style?: React.CSSProperties, onClick?: () => void }) {
+    return <div className="action-button" style={style} onClick={onClick}>
         <Icon size={20} />
     </div>
 }

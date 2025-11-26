@@ -14,8 +14,11 @@ import {
     Ticker,
     NineSliceSprite,
     SCALE_MODES,
-    TilingSprite
+    TilingSprite,
+    Filter,
 } from 'pixi.js';
+import { ArrowDownToLineIcon, FlowerIcon, HomeIcon, Icon, TreesIcon } from "lucide-react";
+import { OutlineFilter } from 'pixi-filters';
 
 const gridsize = 50;
 
@@ -27,9 +30,28 @@ extend({
     TilingSprite: TilingSprite,
 });
 
+type buildingInfo = {
+    Icon: React.JSX.ElementType,
+    texture: string;
+    type: "9slice" | "tiling";
+    options?: {
+        topHeight: number;
+        bottomHeight: number;
+        leftWidth: number;
+        rightWidth: number;
+    };
+    name: string;
+    metadata: {
+        name: string;
+        description: string;
+        category?: string;
+    };
+}
 
-export const buildingTypes = {
+
+export const buildingTypes: Record<string, buildingInfo> = {
     "building": {
+        Icon: HomeIcon,
         texture: "/building.png",
         type: "9slice",
         options: {
@@ -46,6 +68,7 @@ export const buildingTypes = {
         }
     },
     "stonefloor": {
+        Icon: ArrowDownToLineIcon,
         texture: "/stonefloor.png",
         type: "tiling",
         name: "stonefloor",
@@ -56,6 +79,7 @@ export const buildingTypes = {
         }
     },
     "woodfloor": {
+        Icon: TreesIcon,
         texture: "/woodfloor.png",
         type: "tiling",
         name: "woodfloor",
@@ -66,6 +90,7 @@ export const buildingTypes = {
         }
     },
     "grassfloor": {
+        Icon: FlowerIcon,
         texture: "/grassfloor.png",
         type: "tiling",
         name: "grassfloor",
@@ -91,7 +116,7 @@ export type BuildingProps = {
 
 export function Building({ x, y, width, height, id, type, locked }: BuildingProps) {
     const sprite = useRef<Sprite>(null);
-    const { isEditing, setSelectedBuilding, setBuildings, buildings } = useContext(MetaSpaceContext);
+    const { isEditing, setSelectedBuilding, setBuildings, buildings, selectedBuilding } = useContext(MetaSpaceContext);
     const [dragging, setDragging] = useState(false);
     const [resizing, setResizing] = useState(false);
     const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
@@ -103,6 +128,20 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
             sprite.current.texture = texture;
         });
     }, [sprite.current]);
+    useEffect(() => {
+        if (!sprite.current) return;
+        const outline = new OutlineFilter({
+            thickness: 4,
+            color: "#257be3ff",
+            alpha: 1,
+            quality: 1
+        });
+        if (selectedBuilding === id) {
+            sprite.current.filters = [outline];
+        } else {
+            sprite.current.filters = [];
+        }
+    }, [selectedBuilding, sprite.current]);
     useEffect(() => {
         if (!sprite.current) return;
         const onMouseMove = (e: MouseEvent) => {
@@ -123,6 +162,21 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
             }
         };
         const onMouseDown = (e: MouseEvent) => {
+            const overlappingWithOtherBuildings = buildings.filter(building => (
+                building.x < x + width &&
+                building.x + building.width > x &&
+                building.y < y + height &&
+                building.y + building.height > y &&
+                e.clientX > building.x &&
+                e.clientX < building.x + building.width &&
+                e.clientY > building.y &&
+                e.clientY < building.y + building.height
+            ));
+            console.log(overlappingWithOtherBuildings);
+            if (overlappingWithOtherBuildings.length > 0 && overlappingWithOtherBuildings[overlappingWithOtherBuildings.length - 1].id !== id) {
+                console.log("Overlapping with other buildings");
+                return;
+            }
             if (!isEditing) return;
             if ((e.clientX > x && e.clientX < x + width && e.clientY > y && e.clientY < y + height) && !(e.clientX > x + width - 10 && e.clientY > y + height - 10)) {
                 if (locked) {
