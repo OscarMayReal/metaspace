@@ -41,11 +41,12 @@ export const MetaSpaceContext = createContext({
     socket: null as Socket | null,
     isEditing: false,
     setIsEditing: (isEditing: boolean) => { },
-    selectedBuilding: "",
-    setSelectedBuilding: (selectedBuilding: string) => { },
+    selectedBuilding: "" as string | null,
+    setSelectedBuilding: (selectedBuilding: string | null) => { },
     buildings: [] as BuildingProps[],
     setBuildings: (buildings: BuildingProps[]) => { },
     auth: null as any,
+    buildingLockedTo: null as string | null,
 });
 
 export default function Home({ params }: Usable<{ id: string }>) {
@@ -75,15 +76,25 @@ export default function Home({ params }: Usable<{ id: string }>) {
             const newplayers = players.filter((player: any) => player.id !== auth.data?.user.id);
             setPlayers(newplayers);
         };
+        const buildingLockHandler = (buildingLockedTo: string | null) => {
+            setBuildingLockedTo(buildingLockedTo);
+        };
+        const buildingReceivedHandler = (buildings: BuildingProps[]) => {
+            setBuildings(buildings);
+        };
         socket.on("playerlist.recieved", playerlisthandler);
+        socket.on("building.lock.changed", buildingLockHandler);
+        socket.on("building.recieved", buildingReceivedHandler);
         return () => {
             socket.off("playerlist.recieved", playerlisthandler);
+            socket.off("building.lock.changed", buildingLockHandler);
+            socket.off("building.recieved", buildingReceivedHandler);
         }
-    }, [socket, players]);
+    }, [socket]);
     useEffect(() => {
         if (!socket) return;
         const playerpositionmovehandler = (data: any) => {
-            setPlayers(players.map((player: any) => {
+            setPlayers((prevPlayers) => prevPlayers.map((player: any) => {
                 if (player.id === data.id) {
                     player.position = data.position;
                 }
@@ -94,10 +105,8 @@ export default function Home({ params }: Usable<{ id: string }>) {
         return () => {
             socket.off("player.position.move", playerpositionmovehandler);
         }
-    }, [socket, players]);
-    useEffect(() => {
-        console.log(players);
-    }, [players]);
+    }, [socket]);
+
     const [isEditing, setIsEditing] = useState(false);
     const background = useRef<Sprite>(null);
     const app = useRef<ApplicationRef>(null);
@@ -105,25 +114,32 @@ export default function Home({ params }: Usable<{ id: string }>) {
     const size = useWindowSize();
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [selectedBuilding, setSelectedBuilding] = useState(null as string | null);
-    const [buildings, setBuildings] = useState<BuildingProps[]>([
-        { x: 0, y: 0, width: 10000, height: 10000, id: "0", type: "grassfloor", locked: true },
-        // { x: 200, y: 200, width: 100, height: 100, id: "1", type: "stonefloor", locked: false },
-        // { x: 300, y: 300, width: 100, height: 100, id: "2", type: "woodfloor", locked: false },
-        // { x: 400, y: 400, width: 100, height: 100, id: "3", type: "building", locked: false },
-        // { x: 500, y: 500, width: 100, height: 100, id: "4", type: "building", locked: false },
-        // { x: 600, y: 600, width: 100, height: 100, id: "5", type: "building", locked: false },
-    ]);
+    const [buildings, setBuildings] = useState<BuildingProps[]>([]);
+    const [buildingLockedTo, setBuildingLockedTo] = useState(null as string | null);
     useEffect(() => {
         if (!isEditing) {
             setSelectedBuilding(null);
         }
-    }, [isEditing]);
+        if (buildingLockedTo == null && isEditing && socket && auth.data?.user.id) {
+            socket.emit("building.lock", auth.data?.user.id);
+        } else if (buildingLockedTo != null && !isEditing && socket) {
+            socket.emit("building.unlock");
+        }
+    }, [isEditing, socket, auth]);
     useEffect(() => {
-        if (!background.current) return;
-        background.current.width = size.width;
-        background.current.height = size.height;
-    }, [size, background.current]);
-    return <MetaSpaceContext.Provider value={{ socket, isEditing, setIsEditing, auth, selectedBuilding, setSelectedBuilding, buildings, setBuildings }}><div ref={ref} className="w-full h-full bg-white" >
+        // Only send building updates if we have the lock
+        if (!socket || !auth.data?.user?.id || buildingLockedTo !== auth.data?.user?.id) return;
+
+        // Debounce the sync to prevent rapid updates
+        const timeout = setTimeout(() => {
+            socket.emit("building.send", buildings);
+        }, 100);
+
+        return () => clearTimeout(timeout);
+    }, [buildings, socket, buildingLockedTo, auth]);
+
+
+    return <MetaSpaceContext.Provider value={{ socket, isEditing, setIsEditing, auth, selectedBuilding, setSelectedBuilding, buildings, setBuildings, buildingLockedTo }}><div ref={ref} className="w-full h-full bg-white" >
         <Application onInit={(app) => {
             globalThis.__PIXI_APP__ = app;
             registerPixiJSActionsMixin(Container);
@@ -131,9 +147,9 @@ export default function Home({ params }: Usable<{ id: string }>) {
             app.renderer.canvas.getContext("2d").imageSmoothingEnabled = false;
         }} ref={app} resizeTo={ref} className="appcanvas" autoDensity={true} resolution={window.devicePixelRatio}>
             <pixiContainer>
-                <pixiSprite ref={background} texture={Texture.WHITE} />
+                <pixiSprite ref={background} texture={Texture.WHITE} tint={0xFFFFFF} width={size.width} height={size.height} />
                 {/* <BuildingContainer /> */}
-                {buildings.map((building, index) => <Building key={index} {...building} />)}
+                {buildings.map((building) => <Building key={building.id} {...building} />)}
                 <Grid width={size.width} height={size.height} color={"#00000030"} lineThickness={1} pitch={{ x: gridsize, y: gridsize }} />
                 <Player position={position} setPosition={setPosition} remote={false} />
                 {players.map((player, index) => <Player key={index} position={player.position} remote={true} setPosition={player.setPosition} />)}

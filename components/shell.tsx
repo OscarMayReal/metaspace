@@ -56,42 +56,48 @@ export function InspectorBar() {
 
 export function InspectorSizes() {
     const { selectedBuilding, buildings, setBuildings } = useContext(MetaSpaceContext);
+    const building = buildings.find(b => b.id === selectedBuilding);
+    if (!building) return null;
     return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="floating-panel" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-row gap-[10px] items-center">
             <div className="text-3xl">Sizing</div>
 
         </div>
-        <Input type="number" value={buildings[selectedBuilding].width / 50} onChange={(e) => setBuildings(buildings.map((building) => building.id === selectedBuilding ? { ...building, width: parseFloat(e.target.value) * 50 } : building))} placeholder="Width" />
-        <Input type="number" value={buildings[selectedBuilding].height / 50} onChange={(e) => setBuildings(buildings.map((building) => building.id === selectedBuilding ? { ...building, height: parseFloat(e.target.value) * 50 } : building))} placeholder="Height" />
+        <Input type="number" value={building.width / 50} onChange={(e) => setBuildings(buildings.map((b) => b.id === selectedBuilding ? { ...b, width: parseFloat(e.target.value) * 50 } : b))} placeholder="Width" />
+        <Input type="number" value={building.height / 50} onChange={(e) => setBuildings(buildings.map((b) => b.id === selectedBuilding ? { ...b, height: parseFloat(e.target.value) * 50 } : b))} placeholder="Height" />
     </motion.div>
 }
 
 export function InspectorPosition() {
     const { selectedBuilding, buildings, setBuildings } = useContext(MetaSpaceContext);
+    const building = buildings.find(b => b.id === selectedBuilding);
+    if (!building) return null;
     return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="floating-panel" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-row gap-[10px] items-center">
             <div className="text-3xl">Position</div>
 
         </div>
-        <Input type="number" value={buildings[selectedBuilding].x / 50} onChange={(e) => setBuildings(buildings.map((building) => building.id === selectedBuilding ? { ...building, x: parseFloat(e.target.value) * 50 } : building))} placeholder="X" />
-        <Input type="number" value={buildings[selectedBuilding].y / 50} onChange={(e) => setBuildings(buildings.map((building) => building.id === selectedBuilding ? { ...building, y: parseFloat(e.target.value) * 50 } : building))} placeholder="Y" />
+        <Input type="number" value={building.x / 50} onChange={(e) => setBuildings(buildings.map((b) => b.id === selectedBuilding ? { ...b, x: parseFloat(e.target.value) * 50 } : b))} placeholder="X" />
+        <Input type="number" value={building.y / 50} onChange={(e) => setBuildings(buildings.map((b) => b.id === selectedBuilding ? { ...b, y: parseFloat(e.target.value) * 50 } : b))} placeholder="Y" />
     </motion.div>
 }
 
 export function InspectorOverview() {
     const { selectedBuilding, buildings, setBuildings } = useContext(MetaSpaceContext);
+    const building = buildings.find(b => b.id === selectedBuilding);
+    if (!building) return null;
     return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="floating-panel" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-row gap-[10px] items-center">
             <div className="text-3xl">Overview</div>
         </div>
         <div>
-            <div>{buildingTypes[buildings[selectedBuilding].type].metadata.name}</div>
-            <div>{buildingTypes[buildings[selectedBuilding].type].metadata.description}</div>
+            <div>{buildingTypes[building.type].metadata.name}</div>
+            <div>{buildingTypes[building.type].metadata.description}</div>
         </div>
         <Field className="flex flex-row gap-[10px] items-center">
             <FieldLabel><LockIcon size={20} /> Locked</FieldLabel>
             <FieldContent>
-                <Checkbox checked={buildings[selectedBuilding].locked} onCheckedChange={(checked) => setBuildings(buildings.map((building) => building.id === selectedBuilding ? { ...building, locked: checked } : building))} />
+                <Checkbox checked={building.locked} onCheckedChange={(checked) => setBuildings(buildings.map((b) => b.id === selectedBuilding ? { ...b, locked: checked } : b))} />
             </FieldContent>
         </Field>
     </motion.div>
@@ -135,16 +141,16 @@ export function EditActionbar() {
 }
 
 export function ActionBar() {
-    const { isEditing, setIsEditing } = useContext(MetaSpaceContext);
+    const { isEditing, setIsEditing, buildingLockedTo, auth } = useContext(MetaSpaceContext);
     const [mic, setMic] = useState(false);
     const [camera, setCamera] = useState(false);
     const [hidden, setHidden] = useState(false);
     return <motion.div layout initial={{ opacity: 0, bottom: -60 }} animate={{ opacity: 1, bottom: 30 }} exit={{ opacity: 0, bottom: -60 }} transition={{ duration: 0.2 }} className="actionbar">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
             {!isEditing && <ToggleButton key="micToggle" state={mic && !hidden} setState={setMic} Icon={MicOffIcon} ActiveIcon={MicIcon} />}
             {!isEditing && <ToggleButton key="cameraToggle" state={camera && !hidden} setState={setCamera} Icon={CameraOffIcon} ActiveIcon={CameraIcon} />}
             {!isEditing && <ToggleButton key="hiddenToggle" state={hidden} setState={setHidden} Icon={EyeIcon} ActiveIcon={EyeClosedIcon} />}
-            <ToggleButton key="editToggle" state={isEditing} setState={setIsEditing} Icon={PencilIcon} ActiveIcon={CheckIcon} />
+            {(buildingLockedTo === null || buildingLockedTo === auth.data?.user?.id) && <ToggleButton key="editToggle" state={isEditing} setState={setIsEditing} Icon={PencilIcon} ActiveIcon={CheckIcon} />}
         </AnimatePresence>
     </motion.div>
 }
