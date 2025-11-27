@@ -17,7 +17,8 @@ import {
     Ticker,
     NineSliceSprite,
     SCALE_MODES,
-    TilingSprite
+    TilingSprite,
+    BitmapText
 } from 'pixi.js';
 import type { ApplicationRef, PixiReactElementProps } from "@pixi/react";
 import { createContext, Usable, use, useContext, useEffect, useRef, useState } from "react";
@@ -33,6 +34,7 @@ extend({
     Sprite: Sprite,
     NineSliceSprite: NineSliceSprite,
     TilingSprite: TilingSprite,
+    BitmapText: BitmapText,
 });
 
 
@@ -119,13 +121,17 @@ export default function Home({ params }: Usable<{ id: string }>) {
     useEffect(() => {
         if (!isEditing) {
             setSelectedBuilding(null);
+            // Send final building state before releasing lock
+            if (socket && auth.data?.user?.id && buildingLockedTo === auth.data?.user?.id) {
+                socket.emit("building.send", buildings);
+            }
         }
         if (buildingLockedTo == null && isEditing && socket && auth.data?.user.id) {
             socket.emit("building.lock", auth.data?.user.id);
         } else if (buildingLockedTo != null && !isEditing && socket) {
             socket.emit("building.unlock");
         }
-    }, [isEditing, socket, auth]);
+    }, [isEditing, socket, auth, buildingLockedTo, buildings]);
     useEffect(() => {
         // Only send building updates if we have the lock
         if (!socket || !auth.data?.user?.id || buildingLockedTo !== auth.data?.user?.id) return;
@@ -151,8 +157,8 @@ export default function Home({ params }: Usable<{ id: string }>) {
                 {/* <BuildingContainer /> */}
                 {buildings.map((building) => <Building key={building.id} {...building} />)}
                 <Grid width={size.width} height={size.height} color={"#00000030"} lineThickness={1} pitch={{ x: gridsize, y: gridsize }} />
-                <Player position={position} setPosition={setPosition} remote={false} />
-                {players.map((player, index) => <Player key={index} position={player.position} remote={true} setPosition={player.setPosition} />)}
+                <Player position={position} setPosition={setPosition} remote={false} remotePlayer={null} />
+                {players.map((player, index) => <Player key={index} position={player.position} remote={true} setPosition={player.setPosition} remotePlayer={player} />)}
             </pixiContainer>
         </Application>
         <ActionbarTitle />
@@ -161,14 +167,18 @@ export default function Home({ params }: Usable<{ id: string }>) {
     </div></MetaSpaceContext.Provider>
 }
 
-function Player({ position, setPosition, remote }: { position: { x: number, y: number }, setPosition: (position: { x: number, y: number }) => void, remote: boolean }) {
+function Player({ position, setPosition, remote, remotePlayer }: { position: { x: number, y: number }, setPosition: (position: { x: number, y: number }) => void, remote: boolean, remotePlayer?: { id: string, name: string, position: { x: number, y: number }, setPosition: (position: { x: number, y: number }) => void } }) {
     const sprite = useRef<Sprite>(null);
+    const { auth } = useContext(MetaSpaceContext);
+    const name = useRef<BitmapText>(null);
     const [keys, setKeys] = useState({ ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false });
     const playerspeed = 3;
     useEffect(() => {
-        if (!sprite.current || remote) return;
+        if (!sprite.current || remote || !name.current) return;
         Assets.load('/red.png').then((texture) => {
-            sprite.current.texture = texture;
+            if (sprite.current) {
+                sprite.current.texture = texture;
+            }
         });
         const keyDownHandler = (e: KeyboardEvent) => {
             var localkeys = keys;
@@ -195,6 +205,7 @@ function Player({ position, setPosition, remote }: { position: { x: number, y: n
                 localpos.x += playerspeed;
             }
             sprite.current?.position.set(localpos.x, localpos.y);
+            name.current?.position.set(localpos.x, localpos.y - 30);
             setPosition(localpos);
         }
         window.addEventListener("keydown", keyDownHandler);
@@ -205,7 +216,7 @@ function Player({ position, setPosition, remote }: { position: { x: number, y: n
             window.removeEventListener("keyup", keyUpHandler);
             Ticker.shared.remove(tickFuncion);
         }
-    }, [sprite.current, position, keys]);
+    }, [sprite.current, position, keys, name.current]);
     useEffect(() => {
         if (!sprite.current || !remote) return;
         Assets.load('/blue.png').then((texture) => {
@@ -213,10 +224,23 @@ function Player({ position, setPosition, remote }: { position: { x: number, y: n
         });
     }, [sprite.current]);
     useEffect(() => {
+        if (!name.current) return;
+        Assets.load('/font.fnt').then((texture) => {
+            name.current.style.fontFamily = "Pixelify Sans";
+            name.current.style.fontSize = 24;
+            name.current.style.fill = 0x000000;
+            if (remote) {
+                name.current.text = remotePlayer?.name;
+            } else {
+                name.current.text = auth.data?.user?.name;
+            }
+        });
+    }, [name.current]);
+    useEffect(() => {
         if (!sprite.current || !remote) return;
         sprite.current.run(Action.moveToX(position.x, 0.1));
         sprite.current.run(Action.moveToY(position.y, 0.1));
     }, [position, sprite.current]);
     // if (remote) return <pixiSprite width={50} height={100} ref={sprite} />;
-    return <pixiSprite width={50} height={100} ref={sprite} />
+    return <pixiContainer><pixiSprite width={50} height={100} ref={sprite} /><pixiBitmapText text="Hello World" ref={name} x={position.x} y={position.y - 30} /></pixiContainer>
 }

@@ -190,9 +190,11 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
                 sprite.current.run(Action.moveToY(Math.round((e.clientY - mouseOffset.y) / gridsize) * gridsize, 0.075));
                 // sprite.current.x = Math.round((e.clientX - mouseOffset.x) / gridsize) * gridsize;
                 // sprite.current.y = Math.round((e.clientY - mouseOffset.y) / gridsize) * gridsize;
-                resizeHandle.current.x = sprite.current.x + sprite.current.width - 10;
-                resizeHandle.current.y = sprite.current.y + sprite.current.height - 10;
-            } else if (resizing) {
+                if (resizeHandle.current) {
+                    resizeHandle.current.x = sprite.current.x + sprite.current.width - 10;
+                    resizeHandle.current.y = sprite.current.y + sprite.current.height - 10;
+                }
+            } else if (resizing && resizeHandle.current) {
                 // sprite.current.run(Action.moveToX(Math.round((e.clientX - sprite.current.x) / gridsize) * gridsize, 0.1));
                 // sprite.current.run(Action.moveToY(Math.round((e.clientY - sprite.current.y) / gridsize) * gridsize, 0.1));
                 sprite.current.width = Math.round((e.clientX - sprite.current.x) / gridsize) * gridsize;
