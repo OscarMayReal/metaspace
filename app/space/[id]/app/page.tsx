@@ -27,6 +27,10 @@ import { AnimatePresence } from "framer-motion";
 import { Grid } from "@/components/pixi/Grid";
 import { useAuth } from "keystone-lib";
 const gridsize = 50;
+let scale = 1.25;
+import { LiveKitRoom } from "@livekit/components-react";
+import { Button } from "@/components/ui/button";
+import { DoorOpenIcon } from "lucide-react";
 
 extend({
     Container: Container,
@@ -49,13 +53,28 @@ export const MetaSpaceContext = createContext({
     setBuildings: (buildings: BuildingProps[]) => { },
     auth: null as any,
     buildingLockedTo: null as string | null,
+    commsToken: null as string | null,
 });
 
-export default function Home({ params }: Usable<{ id: string }>) {
+export default function HomePrejoin({ params }: { params: Usable<{ id: string }> }) {
+    const [hasJoined, setHasJoined] = useState(false);
+    if (!hasJoined) {
+        return <div className="w-full h-full flex items-center justify-center">
+            <Button onClick={() => setHasJoined(true)}>
+                <DoorOpenIcon />
+                Join
+            </Button>
+        </div>
+    }
+    return <Home params={params} />
+}
+
+export function Home({ params }: { params: Usable<{ id: string }> }) {
     const auth = useAuth({ keystoneUrl: process.env.NEXT_PUBLIC_KEYSTONE_URL!, appId: process.env.NEXT_PUBLIC_APPID! });
     const [socket, setSocket] = useState<Socket | null>(null);
     const { id } = use(params)
     const [players, setPlayers] = useState([] as any[]);
+    const [commsToken, setCommsToken] = useState<string | null>(null);
     useEffect(() => {
         if (!auth.loaded || !id) return;
         const socket = io(process.env.NEXT_PUBLIC_API_URL, {
@@ -84,13 +103,18 @@ export default function Home({ params }: Usable<{ id: string }>) {
         const buildingReceivedHandler = (buildings: BuildingProps[]) => {
             setBuildings(buildings);
         };
+        const commsTokenHandler = (token: string) => {
+            setCommsToken(token);
+        };
         socket.on("playerlist.recieved", playerlisthandler);
         socket.on("building.lock.changed", buildingLockHandler);
         socket.on("building.recieved", buildingReceivedHandler);
+        socket.on("comms.token", commsTokenHandler);
         return () => {
             socket.off("playerlist.recieved", playerlisthandler);
             socket.off("building.lock.changed", buildingLockHandler);
             socket.off("building.recieved", buildingReceivedHandler);
+            socket.off("comms.token", commsTokenHandler);
         }
     }, [socket]);
     useEffect(() => {
@@ -150,20 +174,22 @@ export default function Home({ params }: Usable<{ id: string }>) {
             globalThis.__PIXI_APP__ = app;
             registerPixiJSActionsMixin(Container);
             app.ticker.add(Action.tick);
-            app.renderer.canvas.getContext("2d").imageSmoothingEnabled = false;
+            app.stage.scale.set(scale);
         }} ref={app} resizeTo={ref} className="appcanvas" autoDensity={true} resolution={window.devicePixelRatio}>
             <pixiContainer>
                 <pixiSprite ref={background} texture={Texture.WHITE} tint={0xFFFFFF} width={size.width} height={size.height} />
                 {/* <BuildingContainer /> */}
                 {buildings.map((building) => <Building key={building.id} {...building} />)}
                 <Grid width={size.width} height={size.height} color={"#00000030"} lineThickness={1} pitch={{ x: gridsize, y: gridsize }} />
-                <Player position={position} setPosition={setPosition} remote={false} remotePlayer={null} />
+                <Player position={position} setPosition={setPosition} remote={false} remotePlayer={undefined} />
                 {players.map((player, index) => <Player key={index} position={player.position} remote={true} setPosition={player.setPosition} remotePlayer={player} />)}
             </pixiContainer>
         </Application>
-        <ActionbarTitle />
-        <ActionbarHolder />
-        {isEditing && selectedBuilding !== null && <InspectorHolder />}
+        {commsToken != null && <LiveKitRoom serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL!} token={commsToken}>
+            <ActionbarTitle />
+            <ActionbarHolder />
+            {isEditing && selectedBuilding !== null && <InspectorHolder />}
+        </LiveKitRoom>}
     </div></MetaSpaceContext.Provider>
 }
 
@@ -230,9 +256,9 @@ function Player({ position, setPosition, remote, remotePlayer }: { position: { x
             name.current.style.fontSize = 24;
             name.current.style.fill = 0x000000;
             if (remote) {
-                name.current.text = remotePlayer?.name;
+                name.current.text = remotePlayer?.name || "";
             } else {
-                name.current.text = auth.data?.user?.name;
+                name.current.text = auth.data?.user?.name || "";
             }
         });
     }, [name.current]);
@@ -242,5 +268,5 @@ function Player({ position, setPosition, remote, remotePlayer }: { position: { x
         sprite.current.run(Action.moveToY(position.y, 0.1));
     }, [position, sprite.current]);
     // if (remote) return <pixiSprite width={50} height={100} ref={sprite} />;
-    return <pixiContainer><pixiSprite width={50} height={100} ref={sprite} /><pixiBitmapText text="Hello World" ref={name} x={position.x} y={position.y - 30} /></pixiContainer>
+    return <pixiContainer><pixiSprite width={37.5} height={75} ref={sprite} /><pixiBitmapText text="Hello World" ref={name} x={position.x} y={position.y - 30} /></pixiContainer>
 }

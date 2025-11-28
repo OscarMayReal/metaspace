@@ -22,6 +22,7 @@ import { ArrowDownToLineIcon, FlowerIcon, HomeIcon, Icon, TableIcon, TrashIcon, 
 import { OutlineFilter } from 'pixi-filters';
 
 const gridsize = 50;
+let scale = 1.25;
 
 extend({
     Container: Container,
@@ -176,6 +177,9 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
             alpha: 1,
             quality: 1
         });
+        // Set resolution to match device pixel ratio and scale to prevent blurriness
+        outline.resolution = window.devicePixelRatio * scale;
+
         if (selectedBuilding === id) {
             sprite.current.filters = [outline];
         } else {
@@ -185,9 +189,11 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
     useEffect(() => {
         if (!sprite.current) return;
         const onMouseMove = (e: MouseEvent) => {
+            const canvasx = e.clientX / scale;
+            const canvasy = e.clientY / scale;
             if (dragging) {
-                sprite.current.run(Action.moveToX(Math.round((e.clientX - mouseOffset.x) / gridsize) * gridsize, 0.075));
-                sprite.current.run(Action.moveToY(Math.round((e.clientY - mouseOffset.y) / gridsize) * gridsize, 0.075));
+                sprite.current.run(Action.moveToX(Math.round((canvasx - mouseOffset.x) / gridsize) * gridsize, 0.075));
+                sprite.current.run(Action.moveToY(Math.round((canvasy - mouseOffset.y) / gridsize) * gridsize, 0.075));
                 // sprite.current.x = Math.round((e.clientX - mouseOffset.x) / gridsize) * gridsize;
                 // sprite.current.y = Math.round((e.clientY - mouseOffset.y) / gridsize) * gridsize;
                 if (resizeHandle.current) {
@@ -197,22 +203,24 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
             } else if (resizing && resizeHandle.current) {
                 // sprite.current.run(Action.moveToX(Math.round((e.clientX - sprite.current.x) / gridsize) * gridsize, 0.1));
                 // sprite.current.run(Action.moveToY(Math.round((e.clientY - sprite.current.y) / gridsize) * gridsize, 0.1));
-                sprite.current.width = Math.round((e.clientX - sprite.current.x) / gridsize) * gridsize;
-                sprite.current.height = Math.round((e.clientY - sprite.current.y) / gridsize) * gridsize;
+                sprite.current.width = Math.round((canvasx - sprite.current.x) / gridsize) * gridsize;
+                sprite.current.height = Math.round((canvasy - sprite.current.y) / gridsize) * gridsize;
                 resizeHandle.current.x = sprite.current.x + sprite.current.width - 10;
                 resizeHandle.current.y = sprite.current.y + sprite.current.height - 10;
             }
         };
         const onMouseDown = (e: MouseEvent) => {
+            const canvasx = e.clientX / scale;
+            const canvasy = e.clientY / scale;
             const overlappingWithOtherBuildings = buildings.filter(building => (
                 building.x < x + width &&
                 building.x + building.width > x &&
                 building.y < y + height &&
                 building.y + building.height > y &&
-                e.clientX > building.x &&
-                e.clientX < building.x + building.width &&
-                e.clientY > building.y &&
-                e.clientY < building.y + building.height
+                canvasx > building.x &&
+                canvasx < building.x + building.width &&
+                canvasy > building.y &&
+                canvasy < building.y + building.height
             ));
             console.log(overlappingWithOtherBuildings);
             if (overlappingWithOtherBuildings.length > 0 && overlappingWithOtherBuildings[overlappingWithOtherBuildings.length - 1].id !== id) {
@@ -220,7 +228,7 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
                 return;
             }
             if (!isEditing) return;
-            if ((e.clientX > x && e.clientX < x + width && e.clientY > y && e.clientY < y + height) && !(e.clientX > x + width - 10 && e.clientY > y + height - 10)) {
+            if ((canvasx > x && canvasx < x + width && canvasy > y && canvasy < y + height) && !(canvasx > x + width - 10 && canvasy > y + height - 10)) {
                 if (locked) {
                     setSelectedBuilding(id);
                     return;
@@ -228,10 +236,10 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
                 console.log(id);
                 setSelectedBuilding(id);
                 setDragging(true);
-                setMouseOffset({ x: e.clientX - sprite.current.x, y: e.clientY - sprite.current.y });
-            } else if (e.clientX > x + width - 10 && e.clientY > y + height - 10 && e.clientX < x + width && e.clientY < y + height) {
+                setMouseOffset({ x: canvasx - sprite.current.x, y: canvasy - sprite.current.y });
+            } else if (canvasx > x + width - 10 && canvasy > y + height - 10 && canvasx < x + width && canvasy < y + height) {
                 setResizing(true);
-                setMouseOffset({ x: e.clientX - sprite.current.x + width - 10, y: e.clientY - sprite.current.y + height - 10 });
+                setMouseOffset({ x: canvasx - sprite.current.x + width - 10, y: canvasy - sprite.current.y + height - 10 });
             }
         };
         const onMouseUp = (e: MouseEvent) => {
