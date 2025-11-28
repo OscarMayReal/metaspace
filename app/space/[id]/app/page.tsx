@@ -27,7 +27,7 @@ import { AnimatePresence } from "framer-motion";
 import { Grid } from "@/components/pixi/Grid";
 import { useAuth } from "keystone-lib";
 const gridsize = 50;
-let scale = 1.25;
+let scale = 2;
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import { Button } from "@/components/ui/button";
 import { DoorOpenIcon } from "lucide-react";

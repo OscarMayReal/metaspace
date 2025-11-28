@@ -22,7 +22,7 @@ import { ArrowDownToLineIcon, FlowerIcon, HomeIcon, Icon, TableIcon, TrashIcon, 
 import { OutlineFilter } from 'pixi-filters';
 
 const gridsize = 50;
-let scale = 1.25;
+let scale = 2;
 
 extend({
     Container: Container,
@@ -54,11 +54,11 @@ type buildingInfo = {
 export const buildingTypes: Record<string, buildingInfo> = {
     "building": {
         Icon: HomeIcon,
-        texture: "/building.png",
+        texture: "/newbuilding.png",
         type: "9slice",
         options: {
-            topHeight: 10,
-            bottomHeight: 10,
+            topHeight: 100,
+            bottomHeight: 100,
             leftWidth: 10,
             rightWidth: 10
         },
@@ -164,8 +164,11 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
     const resizeHandle = useRef<Sprite>(null);
     useEffect(() => {
         if (!sprite.current) return;
-        Assets.load(buildingTypes[type].texture).then((texture) => {
-            texture.baseTexture.scaleMode = 'nearest';
+        Assets.load(buildingTypes[type].texture).then((texture: Texture) => {
+            if (buildingTypes[type].type === "9slice") {
+                texture.source.wrapMode = 'repeat';
+            }
+            texture.source.scaleMode = 'nearest';
             sprite.current.texture = texture;
         });
     }, [sprite.current]);
