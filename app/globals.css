@@ -221,6 +221,14 @@ body {
   align-items: center;
 }
 
+.lk-room-container {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100dvh;
+}
+
 .toggle-button {
   min-width: 40px;
   min-height: 40px;
@@ -297,4 +305,30 @@ header {
 
 .header-logo {
   width: 20px;
+}
+
+.participant-item {
+  border-radius: 5px;
+  overflow: hidden;
+  position: relative;
+  width: 228px;
+  height: 142.5px;
+  border: 1px solid var(--border);
+  background-color: #ffffff31
+}
+
+.participant-name {
+  font-size: 12px;
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 5px 10px;
+  font-family: var(--font-figtree);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
 }

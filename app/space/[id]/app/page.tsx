@@ -28,9 +28,10 @@ import { Grid } from "@/components/pixi/Grid";
 import { useAuth } from "keystone-lib";
 const gridsize = 50;
 let scale = 1.25;
-import { LiveKitRoom } from "@livekit/components-react";
+import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import { Button } from "@/components/ui/button";
 import { DoorOpenIcon } from "lucide-react";
+import { CommsViewPanel } from "@/components/videoshell";
 
 extend({
     Container: Container,
@@ -189,6 +190,8 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
             <ActionbarTitle />
             <ActionbarHolder />
             {isEditing && selectedBuilding !== null && <InspectorHolder />}
+            <CommsViewPanel />
+            <RoomAudioRenderer />
         </LiveKitRoom>}
     </div></MetaSpaceContext.Provider>
 }

@@ -10,6 +10,8 @@ import { buildingTypes } from "@/lib/buildings";
 import { Field, FieldContent, FieldLabel } from "./ui/field";
 import { Checkbox } from "./ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import { useTrackToggle } from "@livekit/components-react";
+import { Track } from "livekit-client";
 
 export function ActionbarHolder() {
     const { isEditing, setIsEditing } = useContext(MetaSpaceContext);
@@ -141,14 +143,16 @@ export function EditActionbar() {
 }
 
 export function ActionBar() {
+    var { toggle: toggleCam, enabled: camEnabled } = useTrackToggle({ source: Track.Source.Camera });
+    var { toggle: toggleMic, enabled: micEnabled } = useTrackToggle({ source: Track.Source.Microphone });
     const { isEditing, setIsEditing, buildingLockedTo, auth } = useContext(MetaSpaceContext);
-    const [mic, setMic] = useState(false);
-    const [camera, setCamera] = useState(false);
+    // const [mic, setMic] = useState(false);
+    // const [camera, setCamera] = useState(false);
     const [hidden, setHidden] = useState(false);
     return <motion.div layout initial={{ opacity: 0, bottom: -60 }} animate={{ opacity: 1, bottom: 30 }} exit={{ opacity: 0, bottom: -60 }} transition={{ duration: 0.2 }} className="actionbar">
         <AnimatePresence>
-            {!isEditing && <ToggleButton key="micToggle" state={mic && !hidden} setState={setMic} Icon={MicOffIcon} ActiveIcon={MicIcon} />}
-            {!isEditing && <ToggleButton key="cameraToggle" state={camera && !hidden} setState={setCamera} Icon={CameraOffIcon} ActiveIcon={CameraIcon} />}
+            {!isEditing && <ToggleButton key="micToggle" state={micEnabled && !hidden} setState={toggleMic} Icon={MicOffIcon} ActiveIcon={MicIcon} />}
+            {!isEditing && <ToggleButton key="cameraToggle" state={camEnabled && !hidden} setState={toggleCam} Icon={CameraOffIcon} ActiveIcon={CameraIcon} />}
             {!isEditing && <ToggleButton key="hiddenToggle" state={hidden} setState={setHidden} Icon={EyeIcon} ActiveIcon={EyeClosedIcon} />}
             {(buildingLockedTo === null || buildingLockedTo === auth.data?.user?.id) && <ToggleButton key="editToggle" state={isEditing} setState={setIsEditing} Icon={PencilIcon} ActiveIcon={CheckIcon} />}
         </AnimatePresence>
