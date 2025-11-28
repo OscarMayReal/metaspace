@@ -115,16 +115,6 @@ export function EditActionbar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 {Object.entries(buildingTypes).map(([key, value]) => <DropdownMenuItem key={key} onClick={() => {
-                    // var localbuildings = buildings
-                    // localbuildings.push({
-                    //     x: 100,
-                    //     y: 100,
-                    //     type: key,
-                    //     width: 50,
-                    //     height: 50,
-                    //     locked: false,
-                    //     id: buildings.length.toString()
-                    // })
                     setBuildings([...buildings, {
                         x: 100,
                         y: 100,
@@ -132,7 +122,7 @@ export function EditActionbar() {
                         width: 100,
                         height: 100,
                         locked: false,
-                        id: buildings.length.toString()
+                        id: crypto.randomUUID()
                     }])
                 }}><value.Icon size={20} /> {value.metadata?.name}</DropdownMenuItem>)}
             </DropdownMenuContent>

@@ -140,6 +140,28 @@ export const buildingTypes: Record<string, buildingInfo> = {
             description: "A trashcan",
             category: "Furniture"
         }
+    },
+    "TV": {
+        Icon: TrashIcon,
+        texture: "/tv.png",
+        type: "sprite",
+        name: "TV",
+        metadata: {
+            name: "TV",
+            description: "A TV",
+            category: "Furniture"
+        }
+    },
+    "speaker": {
+        Icon: TrashIcon,
+        texture: "/speaker.png",
+        type: "sprite",
+        name: "speaker",
+        metadata: {
+            name: "Speaker",
+            description: "A speaker",
+            category: "Furniture"
+        }
     }
 }
 
