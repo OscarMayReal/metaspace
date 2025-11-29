@@ -18,7 +18,7 @@ import {
     Filter,
     TilingSpriteOptions,
 } from 'pixi.js';
-import { ArrowDownToLineIcon, FlowerIcon, HomeIcon, Icon, TableIcon, TrashIcon, TreesIcon } from "lucide-react";
+import { ArrowDownToLineIcon, FlowerIcon, HomeIcon, Icon, SnowflakeIcon, SpeakerIcon, TableIcon, TrashIcon, TreesIcon, TvIcon } from "lucide-react";
 import { OutlineFilter } from 'pixi-filters';
 
 const gridsize = 50;
@@ -130,6 +130,17 @@ export const buildingTypes: Record<string, buildingInfo> = {
             category: "Floors"
         }
     },
+    "snowfloor": {
+        Icon: SnowflakeIcon,
+        texture: "/snowfloor.png",
+        type: "tiling",
+        name: "snowfloor",
+        metadata: {
+            name: "Snow Floor",
+            description: "A snow floor",
+            category: "Floors"
+        }
+    },
     "trashcan": {
         Icon: TrashIcon,
         texture: "/trashcan.png",
@@ -142,7 +153,7 @@ export const buildingTypes: Record<string, buildingInfo> = {
         }
     },
     "TV": {
-        Icon: TrashIcon,
+        Icon: TvIcon,
         texture: "/tv.png",
         type: "sprite",
         name: "TV",
@@ -153,7 +164,7 @@ export const buildingTypes: Record<string, buildingInfo> = {
         }
     },
     "speaker": {
-        Icon: TrashIcon,
+        Icon: SpeakerIcon,
         texture: "/speaker.png",
         type: "sprite",
         name: "speaker",
@@ -179,7 +190,7 @@ export type BuildingProps = {
 
 export function Building({ x, y, width, height, id, type, locked }: BuildingProps) {
     const sprite = useRef<Sprite>(null);
-    const { isEditing, setSelectedBuilding, setBuildings, buildings, selectedBuilding } = useContext(MetaSpaceContext);
+    const { isEditing, setSelectedBuilding, setBuildings, buildings, selectedBuilding, viewport } = useContext(MetaSpaceContext);
     const [dragging, setDragging] = useState(false);
     const [resizing, setResizing] = useState(false);
     const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
@@ -214,8 +225,15 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
     useEffect(() => {
         if (!sprite.current) return;
         const onMouseMove = (e: MouseEvent) => {
-            const canvasx = e.clientX / scale;
-            const canvasy = e.clientY / scale;
+            if (!isEditing) return;
+            let canvasx = e.clientX / scale;
+            let canvasy = e.clientY / scale;
+            // Convert screen coordinates to world coordinates using viewport
+            if (viewport?.current) {
+                const worldPoint = viewport.current.toWorld(e.clientX, e.clientY);
+                canvasx = worldPoint.x;
+                canvasy = worldPoint.y;
+            }
             if (dragging) {
                 sprite.current.run(Action.moveToX(Math.round((canvasx - mouseOffset.x) / gridsize) * gridsize, 0.075));
                 sprite.current.run(Action.moveToY(Math.round((canvasy - mouseOffset.y) / gridsize) * gridsize, 0.075));
@@ -235,8 +253,15 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
             }
         };
         const onMouseDown = (e: MouseEvent) => {
-            const canvasx = e.clientX / scale;
-            const canvasy = e.clientY / scale;
+            if (!isEditing) return;
+            let canvasx = e.clientX / scale;
+            let canvasy = e.clientY / scale;
+            // Convert screen coordinates to world coordinates using viewport
+            if (viewport?.current) {
+                const worldPoint = viewport.current.toWorld(e.clientX, e.clientY);
+                canvasx = worldPoint.x;
+                canvasy = worldPoint.y;
+            }
             const overlappingWithOtherBuildings = buildings.filter(building => (
                 building.x < x + width &&
                 building.x + building.width > x &&
@@ -252,7 +277,6 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
                 console.log("Overlapping with other buildings");
                 return;
             }
-            if (!isEditing) return;
             if ((canvasx > x && canvasx < x + width && canvasy > y && canvasy < y + height) && !(canvasx > x + width - 10 && canvasy > y + height - 10)) {
                 if (locked) {
                     setSelectedBuilding(id);
@@ -288,7 +312,7 @@ export function Building({ x, y, width, height, id, type, locked }: BuildingProp
             document.querySelector('.appcanvas')?.removeEventListener('mousedown', onMouseDown);
             document.querySelector('.appcanvas')?.removeEventListener('mouseup', onMouseUp);
         };
-    }, [sprite.current, x, y, width, height, id, setBuildings, buildings, dragging, resizing]);
+    }, [sprite.current, x, y, width, height, id, setBuildings, buildings, dragging, resizing, isEditing]);
     return <pixiContainer>
         {buildingTypes[type].type === "9slice" && <pixiNineSliceSprite ref={sprite} topHeight={buildingTypes[type].options.topHeight} bottomHeight={buildingTypes[type].options.bottomHeight} leftWidth={buildingTypes[type].options.leftWidth} rightWidth={buildingTypes[type].options.rightWidth} x={x} y={y} width={width} height={height} />}
         {buildingTypes[type].type === "tiling" && <pixiTilingSprite ref={sprite} x={x} y={y} width={width} height={height} />}

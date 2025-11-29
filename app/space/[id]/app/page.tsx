@@ -57,6 +57,7 @@ export const MetaSpaceContext = createContext({
     auth: null as any,
     buildingLockedTo: null as string | null,
     commsToken: null as string | null,
+    viewport: null as React.RefObject<Viewport | null> | null,
 });
 
 export default function HomePrejoin({ params }: { params: Usable<{ id: string }> }) {
@@ -146,6 +147,8 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
         viewport.current.follow(playerRef.current);
         viewport.current.screenHeight = size.height / 2;
         viewport.current.screenWidth = size.width / 2;
+        viewport.current.worldHeight = 5000;
+        viewport.current.worldWidth = 5000;
     }, [isAppReady]);
 
     const [isEditing, setIsEditing] = useState(false);
@@ -184,7 +187,7 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
     }, [buildings, socket, buildingLockedTo, auth]);
 
 
-    return <MetaSpaceContext.Provider value={{ socket, isEditing, setIsEditing, auth, selectedBuilding, setSelectedBuilding, buildings, setBuildings, buildingLockedTo }}><div ref={ref} className="w-full h-full bg-white" >
+    return <MetaSpaceContext.Provider value={{ socket, isEditing, setIsEditing, auth, selectedBuilding, setSelectedBuilding, buildings, setBuildings, buildingLockedTo, viewport, commsToken }}><div ref={ref} className="w-full h-full bg-white" >
         <Application onInit={(app) => {
             globalThis.__PIXI_APP__ = app;
             registerPixiJSActionsMixin(Container);
@@ -194,7 +197,7 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
         }} ref={app} resizeTo={ref} className="appcanvas" autoDensity={true} resolution={window.devicePixelRatio}>
             {isAppReady && <pixiViewport ref={viewport} events={app.current?.getApplication().renderer.events}>
                 <pixiContainer>
-                    <pixiSprite ref={background} texture={Texture.WHITE} tint={0xFFFFFF} width={size.width} height={size.height} />
+                    <pixiSprite ref={background} texture={Texture.WHITE} tint={0xFFFFFF} width={5000} height={5000} />
                     {/* <BuildingContainer /> */}
                     {buildings.map((building) => <Building key={building.id} {...building} />)}
                     <Grid width={size.width} height={size.height} color={"#00000030"} lineThickness={1} pitch={{ x: gridsize, y: gridsize }} />
