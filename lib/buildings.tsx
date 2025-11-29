@@ -119,6 +119,17 @@ export const buildingTypes: Record<string, buildingInfo> = {
             category: "Furniture"
         }
     },
+    "cabinet2": {
+        Icon: TableIcon,
+        texture: "/cabinet2.png",
+        type: "sprite",
+        name: "cabinet (Longer)",
+        metadata: {
+            name: "Cabinet (Longer)",
+            description: "A longer cabinet",
+            category: "Furniture"
+        }
+    },
     "grassfloor": {
         Icon: FlowerIcon,
         texture: "/grassfloor.png",

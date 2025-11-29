@@ -18,7 +18,9 @@ import {
     NineSliceSprite,
     SCALE_MODES,
     TilingSprite,
-    BitmapText
+    BitmapText,
+    ParticleContainer,
+    Particle
 } from 'pixi.js';
 import type { ApplicationRef, PixiReactElementProps } from "@pixi/react";
 import { createContext, Usable, use, useContext, useEffect, useRef, useState } from "react";
@@ -42,6 +44,7 @@ extend({
     TilingSprite: TilingSprite,
     BitmapText: BitmapText,
     Viewport: Viewport,
+    ParticleContainer: ParticleContainer,
 });
 
 
@@ -74,6 +77,7 @@ export default function HomePrejoin({ params }: { params: Usable<{ id: string }>
 }
 
 export function Home({ params }: { params: Usable<{ id: string }> }) {
+    const particleContainer = useRef<ParticleContainer>(null);
     const auth = useAuth({ keystoneUrl: process.env.NEXT_PUBLIC_KEYSTONE_URL!, appId: process.env.NEXT_PUBLIC_APPID! });
     const [socket, setSocket] = useState<Socket | null>(null);
     const { id } = use(params)
@@ -142,13 +146,49 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
     useEffect(() => {
         console.log("viewport", viewport.current);
         console.log("playerRef", playerRef.current);
-        if (!viewport.current || !playerRef.current) return;
+        if (!viewport.current || !playerRef.current || !particleContainer.current) return;
         console.log("following");
         viewport.current.follow(playerRef.current);
         viewport.current.screenHeight = size.height / 2;
         viewport.current.screenWidth = size.width / 2;
         viewport.current.worldHeight = 5000;
         viewport.current.worldWidth = 5000;
+
+        const particles: Particle[] = [];
+
+        Assets.load("/snow.png").then((texture) => {
+            const particleSpawner = setInterval(() => {
+                const particle = new Particle({
+                    texture,
+                    x: Math.random() * 5000,
+                    y: -50,
+                });
+                particles.push(particle);
+                particleContainer.current?.addParticle(particle);
+            }, 10);
+
+            const tickFunction = () => {
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const particle = particles[i];
+                    particle.y += 2;
+                    particle.x += Math.sin(particle.y * 0.01) * 0.5;
+
+                    if (particle.y > size.height) {
+                        particleContainer.current?.removeParticle(particle);
+                        particles.splice(i, 1);
+                    }
+                }
+            };
+
+            Ticker.shared.add(tickFunction);
+
+            return () => {
+                clearInterval(particleSpawner);
+                Ticker.shared.remove(tickFunction);
+                particles.forEach(p => particleContainer.current?.removeParticle(p));
+                particles.length = 0;
+            };
+        });
     }, [isAppReady]);
 
     const [isEditing, setIsEditing] = useState(false);
@@ -205,6 +245,7 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
                     {players.map((player, index) => <Player key={index} position={player.position} remote={true} setPosition={player.setPosition} remotePlayer={player} />)}
                 </pixiContainer>
             </pixiViewport>}
+            <pixiParticleContainer x={0} y={0} ref={particleContainer} width={5000} height={5000} />
         </Application>
         {commsToken != null && <LiveKitRoom serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL!} token={commsToken}>
             <ActionbarTitle />
@@ -276,7 +317,7 @@ function Player({ position, setPosition, remote, remotePlayer, playerRef }: { po
         if (!name.current) return;
         Assets.load('/font.fnt').then((texture) => {
             name.current.style.fontFamily = "Pixelify Sans";
-            name.current.style.fontSize = 24;
+            name.current.style.fontSize = 10;
             name.current.style.fill = 0x000000;
             if (remote) {
                 name.current.text = remotePlayer?.name || "";
@@ -291,8 +332,10 @@ function Player({ position, setPosition, remote, remotePlayer, playerRef }: { po
         sprite.current.run(Action.moveToY(position.y, 0.1));
     }, [position, sprite.current]);
     // if (remote) return <pixiSprite width={50} height={100} ref={sprite} />;
-    return <pixiContainer><pixiSprite width={37.5} height={75} ref={(Element) => {
+    return <pixiContainer><pixiSprite width={37} height={75} ref={(Element) => {
         sprite.current = Element;
-        playerRef.current = Element;
+        if (!remote) {
+            playerRef.current = Element;
+        }
     }} /><pixiBitmapText text="Hello World" ref={name} x={position.x} y={position.y - 30} /></pixiContainer>
 }
