@@ -32,6 +32,7 @@ import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import { Button } from "@/components/ui/button";
 import { DoorOpenIcon } from "lucide-react";
 import { CommsViewPanel } from "@/components/videoshell";
+import { Viewport } from "pixi-viewport";
 
 extend({
     Container: Container,
@@ -40,6 +41,7 @@ extend({
     NineSliceSprite: NineSliceSprite,
     TilingSprite: TilingSprite,
     BitmapText: BitmapText,
+    Viewport: Viewport,
 });
 
 
@@ -76,6 +78,9 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
     const { id } = use(params)
     const [players, setPlayers] = useState([] as any[]);
     const [commsToken, setCommsToken] = useState<string | null>(null);
+    const [isAppReady, setIsAppReady] = useState(false);
+    const viewport = useRef<Viewport>(null);
+    const playerRef = useRef<Sprite>(null);
     useEffect(() => {
         if (!auth.loaded || !id) return;
         const socket = io(process.env.NEXT_PUBLIC_API_URL, {
@@ -133,6 +138,15 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
             socket.off("player.position.move", playerpositionmovehandler);
         }
     }, [socket]);
+    useEffect(() => {
+        console.log("viewport", viewport.current);
+        console.log("playerRef", playerRef.current);
+        if (!viewport.current || !playerRef.current) return;
+        console.log("following");
+        viewport.current.follow(playerRef.current);
+        viewport.current.screenHeight = size.height / 2;
+        viewport.current.screenWidth = size.width / 2;
+    }, [isAppReady]);
 
     const [isEditing, setIsEditing] = useState(false);
     const background = useRef<Sprite>(null);
@@ -176,15 +190,18 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
             registerPixiJSActionsMixin(Container);
             app.ticker.add(Action.tick);
             app.stage.scale.set(scale);
+            setIsAppReady(true);
         }} ref={app} resizeTo={ref} className="appcanvas" autoDensity={true} resolution={window.devicePixelRatio}>
-            <pixiContainer>
-                <pixiSprite ref={background} texture={Texture.WHITE} tint={0xFFFFFF} width={size.width} height={size.height} />
-                {/* <BuildingContainer /> */}
-                {buildings.map((building) => <Building key={building.id} {...building} />)}
-                <Grid width={size.width} height={size.height} color={"#00000030"} lineThickness={1} pitch={{ x: gridsize, y: gridsize }} />
-                <Player position={position} setPosition={setPosition} remote={false} remotePlayer={undefined} />
-                {players.map((player, index) => <Player key={index} position={player.position} remote={true} setPosition={player.setPosition} remotePlayer={player} />)}
-            </pixiContainer>
+            {isAppReady && <pixiViewport ref={viewport} events={app.current?.getApplication().renderer.events}>
+                <pixiContainer>
+                    <pixiSprite ref={background} texture={Texture.WHITE} tint={0xFFFFFF} width={size.width} height={size.height} />
+                    {/* <BuildingContainer /> */}
+                    {buildings.map((building) => <Building key={building.id} {...building} />)}
+                    <Grid width={size.width} height={size.height} color={"#00000030"} lineThickness={1} pitch={{ x: gridsize, y: gridsize }} />
+                    <Player position={position} setPosition={setPosition} remote={false} remotePlayer={undefined} playerRef={playerRef} />
+                    {players.map((player, index) => <Player key={index} position={player.position} remote={true} setPosition={player.setPosition} remotePlayer={player} />)}
+                </pixiContainer>
+            </pixiViewport>}
         </Application>
         {commsToken != null && <LiveKitRoom serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL!} token={commsToken}>
             <ActionbarTitle />
@@ -196,7 +213,7 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
     </div></MetaSpaceContext.Provider>
 }
 
-function Player({ position, setPosition, remote, remotePlayer }: { position: { x: number, y: number }, setPosition: (position: { x: number, y: number }) => void, remote: boolean, remotePlayer?: { id: string, name: string, position: { x: number, y: number }, setPosition: (position: { x: number, y: number }) => void } }) {
+function Player({ position, setPosition, remote, remotePlayer, playerRef }: { position: { x: number, y: number }, setPosition: (position: { x: number, y: number }) => void, remote: boolean, remotePlayer?: { id: string, name: string, position: { x: number, y: number }, setPosition: (position: { x: number, y: number }) => void }, playerRef?: RefObject<Sprite> }) {
     const sprite = useRef<Sprite>(null);
     const { auth } = useContext(MetaSpaceContext);
     const name = useRef<BitmapText>(null);
@@ -271,5 +288,8 @@ function Player({ position, setPosition, remote, remotePlayer }: { position: { x
         sprite.current.run(Action.moveToY(position.y, 0.1));
     }, [position, sprite.current]);
     // if (remote) return <pixiSprite width={50} height={100} ref={sprite} />;
-    return <pixiContainer><pixiSprite width={37.5} height={75} ref={sprite} /><pixiBitmapText text="Hello World" ref={name} x={position.x} y={position.y - 30} /></pixiContainer>
+    return <pixiContainer><pixiSprite width={37.5} height={75} ref={(Element) => {
+        sprite.current = Element;
+        playerRef.current = Element;
+    }} /><pixiBitmapText text="Hello World" ref={name} x={position.x} y={position.y - 30} /></pixiContainer>
 }
