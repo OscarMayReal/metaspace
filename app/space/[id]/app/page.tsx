@@ -1,7 +1,7 @@
 "use client"
 import { ActionbarTitle, ActionBar, EditBar, ActionbarHolder, InspectorHolder } from "@/components/shell";
 import { useWindowSize } from "@/lib/screensize";
-import { BuildingProps, Building } from "@/lib/buildings";
+import { BuildingProps, Building, buildingTypes } from "@/lib/buildings";
 import {
     Application,
     extend,
@@ -62,6 +62,7 @@ export const MetaSpaceContext = createContext({
     commsToken: null as string | null,
     viewport: null as React.RefObject<Viewport | null> | null,
     playerRef: null as React.RefObject<Sprite | null> | null,
+    players: [] as any[],
 });
 
 export default function HomePrejoin({ params }: { params: Usable<{ id: string }> }) {
@@ -236,7 +237,7 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
     }, [buildings, socket, buildingLockedTo, auth]);
 
 
-    return <MetaSpaceContext.Provider value={{ socket, isEditing, setIsEditing, auth, selectedBuilding, setSelectedBuilding, buildings, setBuildings, buildingLockedTo, viewport, commsToken, playerRef }}><div ref={ref} className="w-full h-full bg-white" >
+    return <MetaSpaceContext.Provider value={{ socket, isEditing, setIsEditing, auth, selectedBuilding, setSelectedBuilding, buildings, setBuildings, buildingLockedTo, viewport, commsToken, playerRef, players }}><div ref={ref} className="w-full h-full bg-white" >
         <Application onInit={(app) => {
             globalThis.__PIXI_APP__ = app;
             registerPixiJSActionsMixin(Container);
@@ -268,10 +269,104 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
 
 function Player({ position, setPosition, remote, remotePlayer, playerRef }: { position: { x: number, y: number }, setPosition: (position: { x: number, y: number }) => void, remote: boolean, remotePlayer?: { id: string, name: string, position: { x: number, y: number }, setPosition: (position: { x: number, y: number }) => void }, playerRef?: RefObject<Sprite> }) {
     const sprite = useRef<Sprite>(null);
-    const { auth } = useContext(MetaSpaceContext);
+    const { auth, buildings, players } = useContext(MetaSpaceContext);
     const name = useRef<BitmapText>(null);
     const [keys, setKeys] = useState({ ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false });
     const playerspeed = 3;
+
+    // Collision detection helper function with layering support
+    const checkCollision = (newX: number, newY: number, playerWidth: number = 37, playerHeight: number = 75) => {
+        const sideWallThickness = 10; // Thickness for left/right walls
+        const topBottomWallThickness = 100; // Thickness for top/bottom walls
+
+        // Find all buildings that overlap with the player's position
+        const overlappingBuildings = buildings.filter(building => {
+            return (
+                newX < building.x + building.width &&
+                newX + playerWidth > building.x &&
+                newY < building.y + building.height &&
+                newY + playerHeight > building.y
+            );
+        });
+
+        // Check all overlapping buildings for collision
+        for (let i = 0; i < overlappingBuildings.length; i++) {
+            const building = overlappingBuildings[i];
+            const category = buildingTypes[building.type]?.metadata?.category;
+
+            // Skip floors - they're always walkable
+            if (category === "Floors") {
+                continue;
+            }
+
+            // Check if this building is covered by a floor that's above it in z-order
+            const hasCoveringFloor = overlappingBuildings.slice(i + 1).some(upperBuilding => {
+                return buildingTypes[upperBuilding.type]?.metadata?.category === "Floors";
+            });
+
+            // If a floor is on top of this building (in the overlapping area), skip collision check
+            if (hasCoveringFloor) {
+                continue;
+            }
+
+            // For buildings, only walls should be solid (hollow interior)
+            if (category === "Buildings") {
+                const { x, y, width, height } = building;
+
+                // Check if player is inside the building bounds
+                const insideHorizontal = newX >= x && newX + playerWidth <= x + width;
+                const insideVertical = newY >= y && newY + playerHeight <= y + height;
+
+                // If completely inside, check if hitting any walls
+                if (insideHorizontal && insideVertical) {
+                    // Check each wall with appropriate thickness
+                    const hitLeftWall = newX < x + sideWallThickness;
+                    const hitRightWall = newX + playerWidth > x + width - sideWallThickness;
+                    const hitTopWall = newY < y + topBottomWallThickness;
+                    const hitBottomWall = newY + playerHeight > y + height - topBottomWallThickness;
+
+                    if (hitLeftWall || hitRightWall || hitTopWall || hitBottomWall) {
+                        return true; // Colliding with a wall
+                    }
+                } else {
+                    // Player is entering from outside - check which walls they're crossing
+                    const crossingLeft = newX < x + sideWallThickness && newX + playerWidth > x;
+                    const crossingRight = newX < x + width && newX + playerWidth > x + width - sideWallThickness;
+                    const crossingTop = newY < y + topBottomWallThickness && newY + playerHeight > y;
+                    const crossingBottom = newY < y + height && newY + playerHeight > y + height - topBottomWallThickness;
+
+                    if (crossingLeft || crossingRight || crossingTop || crossingBottom) {
+                        return true; // Colliding with a wall from outside
+                    }
+                }
+
+                // Inside building interior, not hitting walls - continue checking other buildings
+                continue;
+            }
+
+            // For furniture and other solid objects, full collision
+            return true;
+        }
+
+        // Check collision with other players (only for local player)
+        if (!remote) {
+            for (const player of players) {
+                const otherPlayerWidth = 37;
+                const otherPlayerHeight = 75;
+                if (
+                    newX < player.position.x + otherPlayerWidth &&
+                    newX + playerWidth > player.position.x &&
+                    newY < player.position.y + otherPlayerHeight &&
+                    newY + playerHeight > player.position.y
+                ) {
+                    return true; // Collision detected
+                }
+            }
+        }
+
+        return false; // No collision
+    };
+
     useEffect(() => {
         if (!sprite.current || remote || !name.current) return;
         Assets.load('/red.png').then((texture) => {
@@ -290,25 +385,32 @@ function Player({ position, setPosition, remote, remotePlayer, playerRef }: { po
             setKeys(localkeys);
         };
         const tickFuncion = () => {
-            let localpos = position;
+            let localpos = { ...position };
+            const playerWidth = 37;
+            const playerHeight = 75;
+
             if (keys.ArrowUp) {
-                if (localpos.y > 0) {
-                    localpos.y -= playerspeed;
+                const newY = Math.max(0, localpos.y - playerspeed);
+                if (!checkCollision(localpos.x, newY, playerWidth, playerHeight)) {
+                    localpos.y = newY;
                 }
             }
             if (keys.ArrowDown) {
-                if (localpos.y < 5000) {
-                    localpos.y += playerspeed;
+                const newY = Math.min(5000 - playerHeight, localpos.y + playerspeed);
+                if (!checkCollision(localpos.x, newY, playerWidth, playerHeight)) {
+                    localpos.y = newY;
                 }
             }
             if (keys.ArrowLeft) {
-                if (localpos.x > 0) {
-                    localpos.x -= playerspeed;
+                const newX = Math.max(0, localpos.x - playerspeed);
+                if (!checkCollision(newX, localpos.y, playerWidth, playerHeight)) {
+                    localpos.x = newX;
                 }
             }
             if (keys.ArrowRight) {
-                if (localpos.x < 5000) {
-                    localpos.x += playerspeed;
+                const newX = Math.min(5000 - playerWidth, localpos.x + playerspeed);
+                if (!checkCollision(newX, localpos.y, playerWidth, playerHeight)) {
+                    localpos.x = newX;
                 }
             }
             sprite.current?.position.set(localpos.x, localpos.y);
@@ -323,7 +425,7 @@ function Player({ position, setPosition, remote, remotePlayer, playerRef }: { po
             window.removeEventListener("keyup", keyUpHandler);
             Ticker.shared.remove(tickFuncion);
         }
-    }, [sprite.current, position, keys, name.current]);
+    }, [sprite.current, position, keys, name.current, buildings, players]);
     useEffect(() => {
         if (!sprite.current || !remote) return;
         Assets.load('/blue.png').then((texture) => {
