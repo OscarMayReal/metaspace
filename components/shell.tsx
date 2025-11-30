@@ -12,6 +12,7 @@ import { Checkbox } from "./ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { useTrackToggle } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import { useParams } from "next/navigation";
 
 export function ActionbarHolder() {
     const { isEditing, setIsEditing } = useContext(MetaSpaceContext);
@@ -106,7 +107,7 @@ export function InspectorOverview() {
 }
 
 export function EditActionbar() {
-    const { buildings, setBuildings } = useContext(MetaSpaceContext);
+    const { buildings, setBuildings, playerRef } = useContext(MetaSpaceContext);
     const [tool, setTool] = useState("cursor");
     return <motion.div initial={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0 }} animate={{ opacity: 1, width: "auto", paddingLeft: 10, paddingRight: 10 }} exit={{ opacity: 0, width: 0, paddingLeft: 0, paddingRight: 0 }} transition={{ duration: 0.2 }} className="actionbar">
         <DropdownMenu>
@@ -116,8 +117,8 @@ export function EditActionbar() {
             <DropdownMenuContent>
                 {Object.entries(buildingTypes).map(([key, value]) => <DropdownMenuItem key={key} onClick={() => {
                     setBuildings([...buildings, {
-                        x: 100,
-                        y: 100,
+                        x: Math.round((playerRef.current?.position.x || 0) / 50) * 50,
+                        y: Math.round((playerRef.current?.position.y || 0) / 50) * 50,
                         type: key,
                         width: 100,
                         height: 100,
@@ -143,18 +144,27 @@ export function ActionBar() {
         <AnimatePresence>
             {!isEditing && <ToggleButton key="micToggle" state={micEnabled && !hidden} setState={toggleMic} Icon={MicOffIcon} ActiveIcon={MicIcon} />}
             {!isEditing && <ToggleButton key="cameraToggle" state={camEnabled && !hidden} setState={toggleCam} Icon={CameraOffIcon} ActiveIcon={CameraIcon} />}
-            {!isEditing && <ToggleButton key="hiddenToggle" state={hidden} setState={setHidden} Icon={EyeIcon} ActiveIcon={EyeClosedIcon} />}
+            {/* {!isEditing && <ToggleButton key="hiddenToggle" state={hidden} setState={setHidden} Icon={EyeIcon} ActiveIcon={EyeClosedIcon} />} */}
             {(buildingLockedTo === null || buildingLockedTo === auth.data?.user?.id) && <ToggleButton key="editToggle" state={isEditing} setState={setIsEditing} Icon={PencilIcon} ActiveIcon={CheckIcon} />}
         </AnimatePresence>
     </motion.div>
 }
 
 export function EditBar() {
+    const { buildings } = useContext(MetaSpaceContext);
     return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="actionbar" style={{
         paddingRight: 30,
 
     }}>
-        <ActionButton Icon={PencilIcon} style={{ backgroundColor: "#eb403400" }} />
+        <ActionButton onClick={() => {
+            const file = new File([JSON.stringify(buildings)], "buildings.json", { type: "application/json" });
+            const url = URL.createObjectURL(file);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "buildings.json";
+            a.click();
+            URL.revokeObjectURL(url);
+        }} Icon={PencilIcon} style={{ backgroundColor: "#eb403400" }} />
         <div style={{
 
         }}>
@@ -166,12 +176,13 @@ export function EditBar() {
 
 export function ActionbarTitle() {
     const { auth } = useContext(MetaSpaceContext);
+    const params = useParams();
     return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="actionbar-header">
         <Link href="/home"><ActionButton Icon={XIcon} style={{ backgroundColor: "#eb4034" }} /></Link>
         <div style={{
 
         }}>
-            <div className="actionbar-header-title">Room Name</div>
+            <div className="actionbar-header-title">{params.id}</div>
             <div className="actionbar-header-text"><UserIcon size={12} /> {auth?.data?.user?.name}</div>
         </div>
     </motion.div>

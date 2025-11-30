@@ -61,6 +61,7 @@ export const MetaSpaceContext = createContext({
     buildingLockedTo: null as string | null,
     commsToken: null as string | null,
     viewport: null as React.RefObject<Viewport | null> | null,
+    playerRef: null as React.RefObject<Sprite | null> | null,
 });
 
 export default function HomePrejoin({ params }: { params: Usable<{ id: string }> }) {
@@ -86,15 +87,23 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
     const [isAppReady, setIsAppReady] = useState(false);
     const viewport = useRef<Viewport>(null);
     const playerRef = useRef<Sprite>(null);
+    const [hasFirstConnected, setHasFirstConnected] = useState(false);
     useEffect(() => {
         if (!auth.loaded || !id) return;
+        const initdata = window.localStorage.getItem('initdata');
         const socket = io(process.env.NEXT_PUBLIC_API_URL, {
-            auth: {
+            auth: initdata && !hasFirstConnected ? {
                 spaceId: id,
-                token: auth.data?.sessionId
-            }
+                token: auth.data?.sessionId,
+                initdata: initdata
+            } : {
+                spaceId: id,
+                token: auth.data?.sessionId,
+            },
         });
+        localStorage.removeItem('initdata');
         setSocket(socket);
+        setHasFirstConnected(true);
         setInterval(() => {
             socket.emit("position.send", position);
         }, 100);
@@ -227,7 +236,7 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
     }, [buildings, socket, buildingLockedTo, auth]);
 
 
-    return <MetaSpaceContext.Provider value={{ socket, isEditing, setIsEditing, auth, selectedBuilding, setSelectedBuilding, buildings, setBuildings, buildingLockedTo, viewport, commsToken }}><div ref={ref} className="w-full h-full bg-white" >
+    return <MetaSpaceContext.Provider value={{ socket, isEditing, setIsEditing, auth, selectedBuilding, setSelectedBuilding, buildings, setBuildings, buildingLockedTo, viewport, commsToken, playerRef }}><div ref={ref} className="w-full h-full bg-white" >
         <Application onInit={(app) => {
             globalThis.__PIXI_APP__ = app;
             registerPixiJSActionsMixin(Container);
@@ -240,7 +249,7 @@ export function Home({ params }: { params: Usable<{ id: string }> }) {
                     <pixiSprite ref={background} texture={Texture.WHITE} tint={0xFFFFFF} width={5000} height={5000} />
                     {/* <BuildingContainer /> */}
                     {buildings.map((building) => <Building key={building.id} {...building} />)}
-                    <Grid width={size.width} height={size.height} color={"#00000030"} lineThickness={1} pitch={{ x: gridsize, y: gridsize }} />
+                    <Grid width={5000} height={5000} color={"#00000030"} lineThickness={1} pitch={{ x: gridsize, y: gridsize }} />
                     <Player position={position} setPosition={setPosition} remote={false} remotePlayer={undefined} playerRef={playerRef} />
                     {players.map((player, index) => <Player key={index} position={player.position} remote={true} setPosition={player.setPosition} remotePlayer={player} />)}
                 </pixiContainer>
@@ -283,16 +292,24 @@ function Player({ position, setPosition, remote, remotePlayer, playerRef }: { po
         const tickFuncion = () => {
             let localpos = position;
             if (keys.ArrowUp) {
-                localpos.y -= playerspeed;
+                if (localpos.y > 0) {
+                    localpos.y -= playerspeed;
+                }
             }
             if (keys.ArrowDown) {
-                localpos.y += playerspeed;
+                if (localpos.y < 5000) {
+                    localpos.y += playerspeed;
+                }
             }
             if (keys.ArrowLeft) {
-                localpos.x -= playerspeed;
+                if (localpos.x > 0) {
+                    localpos.x -= playerspeed;
+                }
             }
             if (keys.ArrowRight) {
-                localpos.x += playerspeed;
+                if (localpos.x < 5000) {
+                    localpos.x += playerspeed;
+                }
             }
             sprite.current?.position.set(localpos.x, localpos.y);
             name.current?.position.set(localpos.x, localpos.y - 30);

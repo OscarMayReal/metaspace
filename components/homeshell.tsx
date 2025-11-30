@@ -1,8 +1,7 @@
 "use client"
 import { useAuth } from "keystone-lib";
 
-export default function Header() {
-    const auth = useAuth({ keystoneUrl: process.env.NEXT_PUBLIC_KEYSTONE_URL!, appId: process.env.NEXT_PUBLIC_APPID! });
+export default function Header({ auth }: { auth: any }) {
     return <header>
         <img src="/MetaSpace.svg" className="header-logo" alt="" />
         <div className="header-title">
