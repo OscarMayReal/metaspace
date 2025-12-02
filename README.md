@@ -6,7 +6,7 @@ note: this is a beta version, there are a few bugs and sill some placeholders le
 
 ## How to use
 
-1. go to https://metaspace.qplus.cloud
+1. go to https://metaspace.quntem.co.uk
 2. sign in with your Quntem account
 3. click on "Start a Space"
 4. click on "Empty Space" (or "Import from File" to import a space from a file)
@@ -15,7 +15,7 @@ note: this is a beta version, there are a few bugs and sill some placeholders le
 
 ## How to join a space
 
-1. go to https://metaspace.qplus.cloud
+1. go to https://metaspace.quntem.co.uk
 2. sign in with your Quntem account
 3. click on "Join a Space"
 4. enter the code of the space you want to join
