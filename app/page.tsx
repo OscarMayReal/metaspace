@@ -14,7 +14,7 @@ export default function Home() {
           <span className="quntem-text">Quntem</span><span className="metaspace-text"> MetaSpace</span>
         </div>
         <div className="flex-1" />
-        <a href={auth.data?.sessionId ? "/home" : "https://keystone.qplus.cloud/appflow/" + process.env.NEXT_PUBLIC_APPID + "/acquire?redirect=https://localhost:3000/app"}><Button variant="outline" size="sm">
+        <a href={auth.data?.sessionId ? "/home" : "https://keystone.qplus.cloud/appflow/" + process.env.NEXT_PUBLIC_APPID + "/acquire?redirect=https://metaspace.quntem.co.uk/home"}><Button variant="outline" size="sm">
           <LogInIcon /> Sign In With Quntem
         </Button></a>
       </header>
@@ -23,7 +23,7 @@ export default function Home() {
         <h1 className="text-4xl">MetaSpace</h1>
         <p className="text-lg">MetaSpace is a social platform, a fun place to hang out with friends while you talk.</p>
         <div className="flex gap-2">
-          <a href={auth.data?.sessionId ? "/home" : "https://keystone.qplus.cloud/appflow/" + process.env.NEXT_PUBLIC_APPID + "/acquire?redirect=https://localhost:3000/app"}><Button variant="outline" size="sm">
+          <a href={auth.data?.sessionId ? "/home" : "https://keystone.qplus.cloud/appflow/" + process.env.NEXT_PUBLIC_APPID + "/acquire?redirect=https://metaspace.quntem.co.uk/home"}><Button variant="outline" size="sm">
             <LogInIcon /> Sign In With Quntem
           </Button></a>
         </div>
